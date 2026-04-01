@@ -1,0 +1,111 @@
+---
+- name: Setup static routes and IP forwarding
+  hosts: targets
+  become: true
+
+  vars:
+    route_setup:
+      "10.90.1.4":
+        ipv4:
+          - { dst: "192.168.56.0/24", via: "192.168.46.6" }
+        ipv6:
+          - { dst: "fd00:56::/64", via: "fd00:46::6" }
+      "10.90.1.5":
+        ipv4:
+          - { dst: "192.168.46.0/24", via: "192.168.56.6" }
+        ipv6:
+          - { dst: "fd00:46::/64", via: "fd00:56::6" }
+
+    ping_targets:
+      "10.90.1.1":
+        - { target: "192.168.46.4", label: "Node4  192.168.46.4  (direct)" }
+        - { target: "192.168.46.6", label: "Node6  192.168.46.6  (direct)" }
+        - { target: "192.168.56.5", label: "Node5  192.168.56.5  (direct)" }
+        - { target: "192.168.56.6", label: "Node6  192.168.56.6  (direct)" }
+      "10.90.1.4":
+        - { target: "192.168.46.1", label: "Node1  192.168.46.1  (direct)" }
+        - { target: "192.168.46.6", label: "Node6  192.168.46.6  (direct)" }
+        - { target: "192.168.56.1", label: "Node1  192.168.56.1  (via Node6)" }
+        - { target: "192.168.56.5", label: "Node5  192.168.56.5  (via Node6)" }
+      "10.90.1.5":
+        - { target: "192.168.56.1", label: "Node1  192.168.56.1  (direct)" }
+        - { target: "192.168.56.6", label: "Node6  192.168.56.6  (direct)" }
+        - { target: "192.168.46.1", label: "Node1  192.168.46.1  (via Node6)" }
+        - { target: "192.168.46.4", label: "Node4  192.168.46.4  (via Node6)" }
+      "10.90.1.6":
+        - { target: "192.168.46.1", label: "Node1  192.168.46.1  (direct)" }
+        - { target: "192.168.46.4", label: "Node4  192.168.46.4  (direct)" }
+        - { target: "192.168.56.1", label: "Node1  192.168.56.1  (direct)" }
+        - { target: "192.168.56.5", label: "Node5  192.168.56.5  (direct)" }
+
+  tasks:
+    - name: Add IPv4 static routes
+      ansible.builtin.shell: ip route add {{ item.dst }} via {{ item.via }}
+      loop: "{{ route_setup[inventory_hostname].ipv4 }}"
+      when: inventory_hostname in route_setup
+      failed_when: false
+
+    - name: Add IPv6 static routes
+      ansible.builtin.shell: ip -6 route add {{ item.dst }} via {{ item.via }}
+      loop: "{{ route_setup[inventory_hostname].ipv6 }}"
+      when: inventory_hostname in route_setup
+      failed_when: false
+
+    - name: Enable IPv4 forwarding on Node 6
+      ansible.builtin.shell: sysctl -w net.ipv4.ip_forward=1
+      when: inventory_hostname == "10.90.1.6"
+
+    - name: Enable IPv6 forwarding on Node 6
+      ansible.builtin.shell: sysctl -w net.ipv6.conf.all.forwarding=1
+      when: inventory_hostname == "10.90.1.6"
+
+    - name: Show IPv4 routing table
+      ansible.builtin.shell: ip route show
+      register: ipv4_routes
+
+    - name: Show IPv6 routing table
+      ansible.builtin.shell: ip -6 route show
+      register: ipv6_routes
+
+    - name: Print routing tables
+      ansible.builtin.debug:
+        msg:
+          - "=== IPv4 routes ==="
+          - "{{ ipv4_routes.stdout_lines }}"
+          - "=== IPv6 routes ==="
+          - "{{ ipv6_routes.stdout_lines }}"
+
+    # --- Ping tests ---
+    - name: Ping connectivity tests
+      ansible.builtin.shell: ping -c 2 -W 2 {{ item.target }}
+      loop: "{{ ping_targets[inventory_hostname] }}"
+      when: inventory_hostname in ping_targets
+      register: ping_results
+      failed_when: false
+
+    - name: Build ping summary per host
+      ansible.builtin.set_fact:
+        ping_summary: "{{ ping_summary | default([]) + [item.item.label + ': ' + ('OK' if item.rc == 0 else 'FAIL')] }}"
+      loop: "{{ ping_results.results }}"
+      when: inventory_hostname in ping_targets
+
+    # --- Global recap (runs once, reads all hostvars) ---
+    - name: Print ping recap
+      ansible.builtin.debug:
+        msg: |
+          ============================================================
+          PING RECAP
+          ============================================================
+          {% for host in groups['targets'] %}
+          [{{ host }}]
+          {% if hostvars[host].ping_summary is defined %}
+          {% for line in hostvars[host].ping_summary %}
+            {{ line }}
+          {% endfor %}
+          {% else %}
+            (no ping tests configured)
+          {% endif %}
+
+          {% endfor %}
+          ============================================================
+      run_once: true

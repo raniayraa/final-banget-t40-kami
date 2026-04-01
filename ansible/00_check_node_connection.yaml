@@ -1,0 +1,19 @@
+---
+- name: Basic Setup - SSH and Connectivity Check
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Log successful SSH connection
+      ansible.builtin.debug:
+        msg: "Successfully connected via SSH to {{ inventory_hostname }}"
+
+    - name: Ping 8.8.8.8
+      ansible.builtin.command: ping -c 3 8.8.8.8
+      register: ping_result
+      failed_when: ping_result.rc != 0
+
+    - name: Log successful ping to 8.8.8.8
+      ansible.builtin.debug:
+        msg: "Ping to 8.8.8.8 succeeded on {{ inventory_hostname }}"
+      when: ping_result.rc == 0

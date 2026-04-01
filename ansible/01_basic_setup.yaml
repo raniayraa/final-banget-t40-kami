@@ -1,0 +1,67 @@
+---
+- name: Basic network interface setup
+  hosts: targets
+  become: true
+
+  vars:
+    iface_setup:
+      "10.90.1.1":
+        enp1s0f0np0:
+          ipv4: "192.168.46.1/24"
+          ipv6: "fd00:46::1/64"
+        enp1s0f1np1:
+          ipv4: "192.168.56.1/24"
+          ipv6: "fd00:56::1/64"
+      "10.90.1.4":
+        enp1s0f1np1:
+          ipv4: "192.168.46.4/24"
+          ipv6: "fd00:46::4/64"
+      "10.90.1.5":
+        enp1s0f1np1:
+          ipv4: "192.168.56.5/24"
+          ipv6: "fd00:56::5/64"
+      "10.90.1.6":
+        enp1s0f0np0:
+          ipv4: "192.168.56.6/24"
+          ipv6: "fd00:56::6/64"
+        enp1s0f1np1:
+          ipv4: "192.168.46.6/24"
+          ipv6: "fd00:46::6/64"
+
+  tasks:
+    - name: Bind NICs to kernel driver
+      ansible.builtin.shell: >
+        bash /home/telmat/scripts/bind-to-kernel.sh 0000:01:00.1 | grep 01:00.1 &&
+        bash /home/telmat/scripts/bind-to-kernel.sh 0000:01:00.0 | grep 01:00.0
+
+    - name: Bring up interface, flush addresses, disable RA
+      ansible.builtin.shell: |
+        set -e
+        ip link set {{ item.key }} up
+        ip addr flush dev {{ item.key }}
+        ip -6 addr flush dev {{ item.key }}
+        sysctl -w net.ipv6.conf.{{ item.key }}.accept_ra=0
+      loop: "{{ iface_setup[inventory_hostname] | dict2items }}"
+      when: inventory_hostname in iface_setup
+
+    - name: Assign IPv4 address
+      ansible.builtin.shell: ip addr add {{ item.value.ipv4 }} dev {{ item.key }}
+      loop: "{{ iface_setup[inventory_hostname] | dict2items }}"
+      when: inventory_hostname in iface_setup
+
+    - name: Assign IPv6 address
+      ansible.builtin.shell: ip -6 addr add {{ item.value.ipv6 }} dev {{ item.key }}
+      loop: "{{ iface_setup[inventory_hostname] | dict2items }}"
+      when: inventory_hostname in iface_setup
+
+    - name: Show interface addresses
+      ansible.builtin.shell: ip addr show dev {{ item.key }}
+      loop: "{{ iface_setup[inventory_hostname] | dict2items }}"
+      register: iface_show
+      when: inventory_hostname in iface_setup
+
+    - name: Print interface addresses
+      ansible.builtin.debug:
+        msg: "{{ item.stdout_lines }}"
+      loop: "{{ iface_show.results }}"
+      when: iface_show is defined and item.stdout is defined

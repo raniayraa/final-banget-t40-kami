@@ -1,0 +1,98 @@
+---
+- name: Deploy pktgen send scripts to sender nodes
+  hosts: targets
+  become: false
+
+  vars:
+    script_content:
+      "10.90.1.1":
+        filename: "node1_send.pkt"
+        content: |
+          stop 0
+          set 0 size 64
+          set 0 src mac 64:9d:99:ff:f5:7a
+          set 0 dst mac 64:9d:99:ff:f5:9b
+          set 0 src ip 192.168.46.1
+          set 0 dst ip 192.168.56.5
+          set 0 proto udp
+      "10.90.1.4":
+        filename: "node4_send.pkt"
+        content: |
+          stop 0
+          set 0 size 64
+          set 0 src mac 64:9d:99:ff:e7:af
+          set 0 dst mac 64:9d:99:ff:f5:9b
+          set 0 src ip 192.168.46.4
+          set 0 dst ip 192.168.56.1
+          set 0 proto udp
+
+    dpdk_script_hosts:
+      - "10.90.1.1"
+      - "10.90.1.4"
+      - "10.90.1.5"
+
+    bind_to_dpdk_content: |
+      #!/bin/sh
+
+      if [ "$1" != "" ]; then
+              PCI_IF=$1
+      else
+          echo "Please provide the network interface you'd like to monitor."
+          echo "example: $0 0000:00:01.1"
+          exit 1
+      fi
+
+      echo "Bind Interface $PCI_IF into Linux Kernel"
+      modprobe vfio-pci
+      dpdkdevbind=/home/telmat/dpdk/usertools/dpdk-devbind.py
+      $dpdkdevbind --force -u $PCI_IF
+      $dpdkdevbind -b vfio-pci  $PCI_IF
+      $dpdkdevbind -s
+
+  tasks:
+    - name: Deploy pktgen script
+      ansible.builtin.copy:
+        content: "{{ script_content[inventory_hostname].content }}"
+        dest: "/home/ansible/{{ script_content[inventory_hostname].filename }}"
+        mode: "0644"
+      when: inventory_hostname in script_content
+
+    - name: Confirm script deployed
+      ansible.builtin.debug:
+        msg: "Deployed {{ script_content[inventory_hostname].filename }} to /home/ansible/ on {{ inventory_hostname }}"
+      when: inventory_hostname in script_content
+
+    - name: Ensure /home/telmat/scripts directory exists
+      ansible.builtin.file:
+        path: /home/telmat/scripts
+        state: directory
+        mode: "0755"
+      become: true
+      when: inventory_hostname in dpdk_script_hosts
+
+    - name: Deploy bind-to-DPDK.sh
+      ansible.builtin.copy:
+        content: "{{ bind_to_dpdk_content }}"
+        dest: /home/telmat/scripts/bind-to-DPDK.sh
+        mode: "0755"
+      become: true
+      when: inventory_hostname in dpdk_script_hosts
+
+    - name: Confirm bind-to-DPDK.sh deployed
+      ansible.builtin.debug:
+        msg: "Deployed bind-to-DPDK.sh to /home/telmat/scripts/ on {{ inventory_hostname }}"
+      when: inventory_hostname in dpdk_script_hosts
+
+    - name: Bind DPDK interfaces on Node 1
+      ansible.builtin.shell: |
+        bash /home/telmat/scripts/bind-to-DPDK.sh 0000:01:00.1 | grep 01:00.1 | tail -n 1
+        bash /home/telmat/scripts/bind-to-DPDK.sh 0000:01:00.0 | grep 01:00.0 | tail -n 1
+      become: true
+      when: inventory_hostname == "10.90.1.1"
+
+    - name: Bind DPDK interfaces on Node 4 and 5
+      ansible.builtin.shell: |
+        bash /home/telmat/scripts/bind-to-DPDK.sh 0000:01:00.1 | grep 01:00.1 | tail -n 1
+        python3 /home/telmat/dpdk/usertools/dpdk-devbind.py -u 0000:01:00.0
+      become: true
+      when: inventory_hostname in ["10.90.1.4", "10.90.1.5"]
