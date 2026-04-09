@@ -1,0 +1,137 @@
+import { useEffect, useState } from 'react'
+import { api } from '../api/client'
+import type { PlaybookInfo } from '../api/client'
+import { PlaybookCard } from '../components/PlaybookCard'
+import { LogViewer } from '../components/LogViewer'
+import { TrafficControl } from '../components/TrafficControl'
+
+type CardStatus = 'idle' | 'running' | 'paused' | 'done' | 'error' | 'aborted'
+
+interface RunState {
+  jobId: string
+  playbookId: string
+  status: CardStatus
+  pauseState: string | null
+}
+
+export function Playbooks() {
+  const [playbooks, setPlaybooks] = useState<PlaybookInfo[]>([])
+  const [runs, setRuns] = useState<Record<string, RunState>>({}) // keyed by playbookId
+  const [activeId, setActiveId] = useState<string | null>(null)
+  const [allJobId, setAllJobId] = useState<string | null>(null)
+
+  useEffect(() => {
+    api.listPlaybooks().then(setPlaybooks).catch(console.error)
+  }, [])
+
+  const startRun = async (playbookId: string) => {
+    try {
+      const { job_id } = await api.runPlaybook(playbookId)
+      setRuns(prev => ({
+        ...prev,
+        [playbookId]: { jobId: job_id, playbookId, status: 'running', pauseState: null },
+      }))
+      setActiveId(playbookId)
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  const startAll = async () => {
+    try {
+      const { job_id } = await api.runAll()
+      setAllJobId(job_id)
+      setActiveId('__all__')
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  const handleAbort = async (playbookId: string) => {
+    const run = runs[playbookId]
+    if (!run) return
+    try {
+      await api.sendSignal(run.jobId, 'abort')
+      setRuns(prev => ({ ...prev, [playbookId]: { ...prev[playbookId], status: 'aborted' } }))
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  const handleStateChange = (playbookId: string) => (status: string, pauseState: string | null) => {
+    setRuns(prev => {
+      const cur = prev[playbookId]
+      if (!cur) return prev
+      const newStatus: CardStatus = pauseState ? 'paused' : (status as CardStatus)
+      return { ...prev, [playbookId]: { ...cur, status: newStatus, pauseState } }
+    })
+  }
+
+  const handleDone = (playbookId: string) => (exitCode: number) => {
+    setRuns(prev => {
+      const cur = prev[playbookId]
+      if (!cur) return prev
+      return { ...prev, [playbookId]: { ...cur, status: exitCode === 0 ? 'done' : 'error', pauseState: null } }
+    })
+  }
+
+  const getStatus = (id: string): CardStatus => runs[id]?.status ?? 'idle'
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <h2 style={{ margin: 0, color: '#222' }}>Playbooks</h2>
+        <button
+          onClick={startAll}
+          style={{
+            padding: '8px 22px',
+            borderRadius: 6,
+            border: 'none',
+            background: '#F6A800',
+            color: '#fff',
+            fontWeight: 700,
+            fontSize: 14,
+            cursor: 'pointer',
+          }}
+        >
+          Run All (00→05)
+        </button>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {playbooks.map(pb => (
+          <div key={pb.id}>
+            <PlaybookCard
+              playbook={pb}
+              status={getStatus(pb.id)}
+              onRun={() => startRun(pb.id)}
+              onAbort={() => handleAbort(pb.id)}
+            />
+            {activeId === pb.id && runs[pb.id] && (
+              <div style={{ marginTop: 8 }}>
+                <LogViewer
+                  jobId={runs[pb.id].jobId}
+                  onStateChange={handleStateChange(pb.id)}
+                  onDone={handleDone(pb.id)}
+                />
+                {pb.id === '04' && (
+                  <TrafficControl
+                    jobId={runs[pb.id].jobId}
+                    pauseState={runs[pb.id].pauseState}
+                  />
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {allJobId && activeId === '__all__' && (
+        <div style={{ marginTop: 24 }}>
+          <h3 style={{ color: '#222', marginBottom: 8 }}>Run All — Output</h3>
+          <LogViewer jobId={allJobId} />
+        </div>
+      )}
+    </div>
+  )
+}

@@ -29,10 +29,16 @@
           ipv6: "fd00:46::6/64"
 
   tasks:
+    - name: Kill any existing pktgen process
+      ansible.builtin.shell: pkill -9 pktgen
+      failed_when: false
+      when: inventory_hostname in ["10.90.1.1", "10.90.1.4", "10.90.1.5"]
+
     - name: Bind NICs to kernel driver
       ansible.builtin.shell: >
         bash /home/telmat/scripts/bind-to-kernel.sh 0000:01:00.1 | grep 01:00.1 &&
         bash /home/telmat/scripts/bind-to-kernel.sh 0000:01:00.0 | grep 01:00.0
+      when: inventory_hostname in ["10.90.1.1", "10.90.1.4", "10.90.1.5"]
 
     - name: Bring up interface, flush addresses, disable RA
       ansible.builtin.shell: |

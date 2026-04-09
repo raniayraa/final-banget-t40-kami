@@ -6,61 +6,216 @@
   vars:
     pktgen_bin: /home/telmat/pktgen-dpdk/builddir/app/pktgen
     pktgen_session: pktgen
-    pktgen_setup:
-      "10.90.1.1":
-        pkt_file: /home/ansible/node1_send.pkt
-        pktgen_args: "-- -T -P -m [1-3:4-6].0 -m [7-9:10-12].1"
-      "10.90.1.4":
-        pkt_file: /home/ansible/node4_send.pkt
-        pktgen_args: "-- -T -P -m [1-3:4-6].0"
+    pktgen_args:
+      "10.90.1.1": "-- -T -P -m [1-3:4-6].0 -m [7-9:10-12].1"
+      "10.90.1.4": "-- -T -P -m [1-3:4-6].0"
+      "10.90.1.5": "-- -T -P -m [1-3:4-6].0"
 
   tasks:
+    # --- Load pkt_file config from dashboard ---
+    - name: Load pktgen config from dashboard
+      ansible.builtin.include_vars:
+        file: /home/telmat/final_t40/dashboard/pktgen_config.json
+        name: pktgen_cfg
+      run_once: true
+      delegate_to: localhost
+      become: false
+
     # --- Launch pktgen ---
     - name: Kill existing pktgen tmux session if present
       ansible.builtin.shell: tmux kill-session -t {{ pktgen_session }}
       failed_when: false
-      when: inventory_hostname in pktgen_setup
+      when: inventory_hostname in pktgen_args
 
-    - name: Launch pktgen in detached tmux session
+    - name: Launch pktgen in detached tmux session (with pkt script)
       ansible.builtin.shell: >
         tmux new-session -d -s {{ pktgen_session }}
-        '{{ pktgen_bin }} {{ pktgen_setup[inventory_hostname].pktgen_args }}
-        -f {{ pktgen_setup[inventory_hostname].pkt_file }}'
-      when: inventory_hostname in pktgen_setup
+        '{{ pktgen_bin }} {{ pktgen_args[inventory_hostname] }}
+        -f {{ pktgen_cfg[inventory_hostname] }}'
+      when: inventory_hostname in pktgen_args and inventory_hostname in pktgen_cfg
+
+    - name: Launch pktgen in detached tmux session (receiver, no pkt script)
+      ansible.builtin.shell: >
+        tmux new-session -d -s {{ pktgen_session }}
+        '{{ pktgen_bin }} {{ pktgen_args[inventory_hostname] }}'
+      when: inventory_hostname in pktgen_args and inventory_hostname not in pktgen_cfg
+
+    - name: Clean up stale signal files
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /tmp/ansible_pktgen_start
+        - /tmp/ansible_pktgen_stop
+      run_once: true
+      delegate_to: localhost
+      become: false
 
     - name: Wait for pktgen to initialize
-      ansible.builtin.pause:
-        seconds: 5
+      ansible.builtin.command: sleep 5
       run_once: true
+      delegate_to: localhost
+      become: false
 
     # --- Start traffic ---
-    - name: Wait for user to start traffic
-      ansible.builtin.pause:
-        prompt: |
-          ============================================================
-          Pktgen is running on all sender nodes.
-          Press ENTER to start sending traffic (start 0)...
-          ============================================================
+    - name: Signal dashboard - waiting for start
+      ansible.builtin.debug:
+        msg: "DASHBOARD_SIGNAL: waiting_for_start"
       run_once: true
+
+    - name: Wait for start signal from dashboard
+      ansible.builtin.wait_for:
+        path: /tmp/ansible_pktgen_start
+        timeout: 3600
+      run_once: true
+      delegate_to: localhost
+      become: false
+
+    - name: Remove start signal file
+      ansible.builtin.file:
+        path: /tmp/ansible_pktgen_start
+        state: absent
+      run_once: true
+      delegate_to: localhost
+      become: false
+
+    - name: Check tmux session is active before start
+      ansible.builtin.shell: tmux list-sessions 2>&1
+      register: tmux_sessions_before_start
+      when: inventory_hostname in pktgen_args
+      failed_when: false
+
+    - name: Show tmux sessions before start
+      ansible.builtin.debug:
+        msg: "{{ tmux_sessions_before_start.stdout_lines | default([]) }}"
+      when: inventory_hostname in pktgen_args
+
+    - name: Capture pktgen screen before start
+      ansible.builtin.shell: tmux capture-pane -pt {{ pktgen_session }} 2>&1
+      register: pktgen_screen_before
+      when: inventory_hostname in pktgen_args
+      failed_when: false
+
+    - name: Show pktgen screen before start
+      ansible.builtin.debug:
+        msg: "{{ pktgen_screen_before.stdout_lines | default([]) }}"
+      when: inventory_hostname in pktgen_args
 
     - name: Start traffic (start 0)
       ansible.builtin.shell: tmux send-keys -t {{ pktgen_session }} "start 0" Enter
-      when: inventory_hostname in pktgen_setup
+      when: inventory_hostname in pktgen_args
+
+    - name: Load stats collection on Node 4 (sender)
+      ansible.builtin.shell: tmux send-keys -t {{ pktgen_session }} "load /home/telmat/scripts/getstats.lua" Enter
+      when: inventory_hostname == "10.90.1.4"
+
+    - name: Load stats collection on Node 1 (sender + receiver ports)
+      ansible.builtin.shell: tmux send-keys -t {{ pktgen_session }} "load /home/telmat/scripts/getstats.lua" Enter
+      when: inventory_hostname == "10.90.1.1"
+
+    - name: Load stats collection on Node 5 (receiver)
+      ansible.builtin.shell: tmux send-keys -t {{ pktgen_session }} "load /home/telmat/scripts/getstats.lua" Enter
+      when: inventory_hostname == "10.90.1.5"
+
+    - name: Wait 2 seconds after start command
+      ansible.builtin.command: sleep 2
+      run_once: true
+      delegate_to: localhost
+      become: false
+
+    - name: Capture pktgen screen after start
+      ansible.builtin.shell: tmux capture-pane -pt {{ pktgen_session }} 2>&1
+      register: pktgen_screen_after
+      when: inventory_hostname in pktgen_args
+      failed_when: false
+
+    - name: Show pktgen screen after start
+      ansible.builtin.debug:
+        msg: "{{ pktgen_screen_after.stdout_lines | default([]) }}"
+      when: inventory_hostname in pktgen_args
 
     # --- Stop traffic ---
-    - name: Wait for user to stop traffic
-      ansible.builtin.pause:
-        prompt: |
-          ============================================================
-          Traffic is running on all sender nodes.
-          Press ENTER to stop traffic and quit pktgen...
-          ============================================================
+    - name: Signal dashboard - waiting for stop
+      ansible.builtin.debug:
+        msg: "DASHBOARD_SIGNAL: waiting_for_stop"
       run_once: true
+
+    - name: Wait for stop signal from dashboard
+      ansible.builtin.wait_for:
+        path: /tmp/ansible_pktgen_stop
+        timeout: 3600
+      run_once: true
+      delegate_to: localhost
+      become: false
+
+    - name: Remove stop signal file
+      ansible.builtin.file:
+        path: /tmp/ansible_pktgen_stop
+        state: absent
+      run_once: true
+      delegate_to: localhost
+      become: false
 
     - name: Stop traffic (stop 0)
       ansible.builtin.shell: tmux send-keys -t {{ pktgen_session }} "stop 0" Enter
-      when: inventory_hostname in pktgen_setup
+      when: inventory_hostname in pktgen_args
 
     - name: Quit pktgen
       ansible.builtin.shell: tmux send-keys -t {{ pktgen_session }} "quit" Enter
-      when: inventory_hostname in pktgen_setup
+      when: inventory_hostname in pktgen_args
+
+    # --- Collect experiment results ---
+    - name: Wait for final stats writes
+      ansible.builtin.command: sleep 5
+      run_once: true
+      delegate_to: localhost
+      become: false
+
+    - name: Freeze experiment timestamp
+      ansible.builtin.set_fact:
+        experiment_ts: "{{ lookup('pipe', 'date +%Y%m%d_%H%M%S') }}"
+      run_once: true
+      delegate_to: localhost
+      become: false
+
+    - name: Create experiment results directory
+      ansible.builtin.file:
+        path: /home/telmat/final_t40/results/pktgen_stats_{{ experiment_ts }}
+        state: directory
+        mode: "0755"
+      run_once: true
+      delegate_to: localhost
+      become: false
+
+    - name: Fetch stats from Node 1
+      ansible.builtin.fetch:
+        src: /tmp/pktgen_stats.log
+        dest: /home/telmat/final_t40/results/pktgen_stats_{{ experiment_ts }}/node1.csv
+        flat: true
+      when: inventory_hostname == "10.90.1.1"
+
+    - name: Fetch stats from Node 4
+      ansible.builtin.fetch:
+        src: /tmp/pktgen_stats.log
+        dest: /home/telmat/final_t40/results/pktgen_stats_{{ experiment_ts }}/node4.csv
+        flat: true
+      when: inventory_hostname == "10.90.1.4"
+
+    - name: Fetch stats from Node 5
+      ansible.builtin.fetch:
+        src: /tmp/pktgen_stats.log
+        dest: /home/telmat/final_t40/results/pktgen_stats_{{ experiment_ts }}/node5.csv
+        flat: true
+      when: inventory_hostname == "10.90.1.5"
+
+    - name: Save pkt scripts used in this experiment
+      ansible.builtin.copy:
+        src: "{{ item }}"
+        dest: /home/telmat/final_t40/results/pktgen_stats_{{ experiment_ts }}/
+        mode: "0644"
+      loop:
+        - /home/telmat/final_t40/dashboard/pkt_files/node1_send.pkt
+        - /home/telmat/final_t40/dashboard/pkt_files/node4_send.pkt
+      run_once: true
+      delegate_to: localhost
+      become: false

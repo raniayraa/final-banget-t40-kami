@@ -1,0 +1,4 @@
+{
+  "10.90.1.1": "/home/ansible/node1_send.pkt",
+  "10.90.1.4": "/home/ansible/node4_send.pkt"
+}

@@ -1,0 +1,52 @@
+---
+- name: Attach XDP forwarder on Node 6 and populate forwarding table
+  hosts: 10.90.1.6
+  become: true
+
+  vars:
+    xdp_bin: "/home/telmat/belajar-rania/combine-firewall-forwarder/xdp_fw_fwd"
+    iface_ingress: "enp1s0f1np1"   # ingress dari subnet 192.168.46.x (Node 1, Node 4)
+    iface_egress:  "enp1s0f0np0"   # egress ke subnet 192.168.56.x  (Node 1, Node 5)
+
+    # fwd_table entries: { dst_ip, dst_mac (Node tujuan), src_mac (Node 6 egress), action }
+    fwd_entries:
+      - dst_ip:  "192.168.56.5"
+        dst_mac: "64:9D:99:FF:E6:CF"   # Node 5 enp1s0f1np1
+        src_mac: "64:9D:99:FF:F5:9A"   # Node 6 enp1s0f0np0
+        action:  "redirect"
+        port_key: 0
+      - dst_ip:  "192.168.56.1"
+        dst_mac: "64:9D:99:FF:F5:7B"   # Node 1 enp1s0f1np1
+        src_mac: "64:9D:99:FF:F5:9A"   # Node 6 enp1s0f0np0
+        action:  "redirect"
+        port_key: 0
+
+  tasks:
+    - name: Unload existing XDP program (safe to fail if none)
+      ansible.builtin.shell: >
+        {{ xdp_bin }} -d {{ iface_ingress }} --unload
+      failed_when: false
+
+    - name: Attach XDP with redirect to egress NIC
+      ansible.builtin.shell: >
+        {{ xdp_bin }} -d {{ iface_ingress }} -r {{ iface_egress }}
+
+    - name: Populate forwarding table entries
+      ansible.builtin.shell: >
+        {{ xdp_bin }} -d {{ iface_ingress }}
+        --add {{ item.dst_ip }}
+        --dst-mac {{ item.dst_mac }}
+        --src-mac {{ item.src_mac }}
+        --action {{ item.action }}
+        --port-key {{ item.port_key }}
+      loop: "{{ fwd_entries }}"
+
+    - name: Show forwarding table
+      ansible.builtin.shell: >
+        {{ xdp_bin }} -d {{ iface_ingress }} --list
+      register: fwd_table_out
+      failed_when: false
+
+    - name: Print forwarding table
+      ansible.builtin.debug:
+        msg: "{{ fwd_table_out.stdout_lines }}"
