@@ -36,13 +36,13 @@
     - name: Deploy pktgen script
       ansible.builtin.copy:
         content: "{{ lookup('file', pkt_files_dir + '/' + pkt_file_map[inventory_hostname]) }}\n"
-        dest: "/home/ansible/{{ pkt_file_map[inventory_hostname] }}"
+        dest: "/home/telmat/{{ pkt_file_map[inventory_hostname] }}"
         mode: "0644"
       when: inventory_hostname in pkt_file_map
 
     - name: Confirm script deployed
       ansible.builtin.debug:
-        msg: "Deployed {{ pkt_file_map[inventory_hostname] }} to /home/ansible/ on {{ inventory_hostname }}"
+        msg: "Deployed {{ pkt_file_map[inventory_hostname] }} to /home/telmat/ on {{ inventory_hostname }}"
       when: inventory_hostname in pkt_file_map
 
     - name: Deploy getstats.lua to pktgen nodes
@@ -56,6 +56,19 @@
     - name: Confirm getstats.lua deployed
       ansible.builtin.debug:
         msg: "Deployed getstats.lua to /home/telmat/scripts/ on {{ inventory_hostname }}"
+      when: inventory_hostname in ["10.90.1.1", "10.90.1.4", "10.90.1.5"]
+
+    - name: Deploy getlatency.lua to pktgen nodes
+      ansible.builtin.copy:
+        src: /home/telmat/final_t40/scripts/getlatency.lua
+        dest: /home/telmat/scripts/getlatency.lua
+        mode: "0644"
+      become: true
+      when: inventory_hostname in ["10.90.1.1", "10.90.1.4", "10.90.1.5"]
+
+    - name: Confirm getlatency.lua deployed
+      ansible.builtin.debug:
+        msg: "Deployed getlatency.lua to /home/telmat/scripts/ on {{ inventory_hostname }}"
       when: inventory_hostname in ["10.90.1.1", "10.90.1.4", "10.90.1.5"]
 
     - name: Ensure /home/telmat/scripts directory exists

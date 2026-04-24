@@ -28,7 +28,8 @@ enum fw_config_key {
 	FW_CFG_BLOCK_ALL_UDP       = 4,  /* Drop ALL UDP (override port list)     */
 	FW_CFG_BLOCK_BROADCAST     = 5,  /* Drop dst == 255.255.255.255           */
 	FW_CFG_BLOCK_MULTICAST     = 6,  /* Drop dst in 224.0.0.0/4              */
-	FW_CFG_EVENTS_ENABLED      = 7,  /* Emit ring buffer events (0=off/turbo) */
+	FW_CFG_EVENTS_ENABLED      = 7,  /* Emit ring buffer events for PASS/TX/REDIRECT (0=off) */
+	FW_CFG_SECURITY_EVENTS     = 8,  /* Emit ring buffer events for DROP/TTL_EXCEEDED (0=off) */
 	FW_CFG_MAX
 };
 

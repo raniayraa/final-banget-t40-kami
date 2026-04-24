@@ -97,26 +97,26 @@ struct {
 
 /* Firewall: TCP destination ports yang diblokir */
 struct {
-	__uint(type, BPF_MAP_TYPE_HASH);
-	__type(key,   __u16);
+	__uint(type, BPF_MAP_TYPE_ARRAY);
+	__type(key,   __u32);
 	__type(value, __u8);
-	__uint(max_entries, 64);
+	__uint(max_entries, 65536);
 } blocked_ports_tcp SEC(".maps");
 
 /* Firewall: UDP destination ports yang diblokir */
 struct {
-	__uint(type, BPF_MAP_TYPE_HASH);
-	__type(key,   __u16);
+	__uint(type, BPF_MAP_TYPE_ARRAY);
+	__type(key,   __u32);
 	__type(value, __u8);
-	__uint(max_entries, 64);
+	__uint(max_entries, 65536);
 } blocked_ports_udp SEC(".maps");
 
 /* Firewall: IP protocol numbers yang diblokir */
 struct {
-	__uint(type, BPF_MAP_TYPE_HASH);
-	__type(key,   __u8);
+	__uint(type, BPF_MAP_TYPE_ARRAY);
+	__type(key,   __u32);
 	__type(value, __u8);
-	__uint(max_entries, 32);
+	__uint(max_entries, 256);
 } blocked_protos SEC(".maps");
 
 /* Firewall: feature flags on/off (key = enum fw_config_key) */
@@ -321,7 +321,15 @@ int xdp_firewall_fwd(struct xdp_md *ctx)
 	 * Kalau 0 (turbo mode): skip seluruh ring buffer + sample_counter overhead.
 	 * Hot path menjadi identik dengan combine-firewall-forwarder.
 	 */
-	int events_enabled = fw_cfg_enabled(FW_CFG_EVENTS_ENABLED);
+	int events_enabled          = fw_cfg_enabled(FW_CFG_EVENTS_ENABLED);
+	int security_events_enabled = fw_cfg_enabled(FW_CFG_SECURITY_EVENTS);
+	int block_fragments         = fw_cfg_enabled(FW_CFG_BLOCK_IP_FRAGMENTS);
+	int block_broadcast         = fw_cfg_enabled(FW_CFG_BLOCK_BROADCAST);
+	int block_multicast         = fw_cfg_enabled(FW_CFG_BLOCK_MULTICAST);
+	int block_all_tcp           = fw_cfg_enabled(FW_CFG_BLOCK_ALL_TCP);
+	int block_bad_tcp           = fw_cfg_enabled(FW_CFG_BLOCK_MALFORMED_TCP);
+	int block_all_udp           = fw_cfg_enabled(FW_CFG_BLOCK_ALL_UDP);
+	int block_icmp_ping         = fw_cfg_enabled(FW_CFG_BLOCK_ICMP_PING);
 
 	/* ── Step 1: Ethernet ─────────────────────────────────────────────── */
 
@@ -344,37 +352,37 @@ int xdp_firewall_fwd(struct xdp_md *ctx)
 
 	/* ── Step 3: Firewall L3 ──────────────────────────────────────────── */
 
-	if (fw_cfg_enabled(FW_CFG_BLOCK_IP_FRAGMENTS) &&
+	if (block_fragments &&
 	    (iph->frag_off & bpf_htons(IP_MF | IP_OFFSET))) {
 		stats_update(STAT_DROP, pkt_len);
-		if (events_enabled)
+		if (security_events_enabled)
 			emit_event_security(iph->saddr, iph->daddr, 0, 0, iph->protocol, PKT_ACTION_DROP, (__u16)pkt_len);
 		return XDP_DROP;
 	}
 
-	if (fw_cfg_enabled(FW_CFG_BLOCK_BROADCAST) &&
+	if (block_broadcast &&
 	    iph->daddr == 0xFFFFFFFF) {
 		stats_update(STAT_DROP, pkt_len);
-		if (events_enabled)
+		if (security_events_enabled)
 			emit_event_security(iph->saddr, iph->daddr, 0, 0, iph->protocol, PKT_ACTION_DROP, (__u16)pkt_len);
 		return XDP_DROP;
 	}
 
-	if (fw_cfg_enabled(FW_CFG_BLOCK_MULTICAST) &&
+	if (block_multicast &&
 	    (bpf_ntohl(iph->daddr) & 0xF0000000) == 0xE0000000) {
 		stats_update(STAT_DROP, pkt_len);
-		if (events_enabled)
+		if (security_events_enabled)
 			emit_event_security(iph->saddr, iph->daddr, 0, 0, iph->protocol, PKT_ACTION_DROP, (__u16)pkt_len);
 		return XDP_DROP;
 	}
 
 	{
-		__u8 proto = iph->protocol;
+		__u32 proto = iph->protocol;
 
 		blocked = bpf_map_lookup_elem(&blocked_protos, &proto);
 		if (blocked && *blocked) {
 			stats_update(STAT_DROP, pkt_len);
-			if (events_enabled)
+			if (security_events_enabled)
 				emit_event_security(iph->saddr, iph->daddr, 0, 0, proto, PKT_ACTION_DROP, (__u16)pkt_len);
 			return XDP_DROP;
 		}
@@ -389,28 +397,28 @@ int xdp_firewall_fwd(struct xdp_md *ctx)
 		l4_sport = bpf_ntohs(tcph->source);
 		l4_dport = bpf_ntohs(tcph->dest);
 
-		if (fw_cfg_enabled(FW_CFG_BLOCK_ALL_TCP)) {
+		if (block_all_tcp) {
 			stats_update(STAT_DROP, pkt_len);
-			if (events_enabled)
+			if (security_events_enabled)
 				emit_event_security(iph->saddr, iph->daddr, l4_sport, l4_dport, IPPROTO_TCP, PKT_ACTION_DROP, (__u16)pkt_len);
 			return XDP_DROP;
 		}
 
-		if (fw_cfg_enabled(FW_CFG_BLOCK_MALFORMED_TCP) &&
+		if (block_bad_tcp &&
 		    tcp_flags_malformed(tcph)) {
 			stats_update(STAT_DROP, pkt_len);
-			if (events_enabled)
+			if (security_events_enabled)
 				emit_event_security(iph->saddr, iph->daddr, l4_sport, l4_dport, IPPROTO_TCP, PKT_ACTION_DROP, (__u16)pkt_len);
 			return XDP_DROP;
 		}
 
 		{
-			__u16 port = l4_dport;
+			__u32 port = l4_dport;
 
 			blocked = bpf_map_lookup_elem(&blocked_ports_tcp, &port);
 			if (blocked && *blocked) {
 				stats_update(STAT_DROP, pkt_len);
-				if (events_enabled)
+				if (security_events_enabled)
 					emit_event_security(iph->saddr, iph->daddr, l4_sport, l4_dport, IPPROTO_TCP, PKT_ACTION_DROP, (__u16)pkt_len);
 				return XDP_DROP;
 			}
@@ -423,20 +431,20 @@ int xdp_firewall_fwd(struct xdp_md *ctx)
 		l4_sport = bpf_ntohs(udph->source);
 		l4_dport = bpf_ntohs(udph->dest);
 
-		if (fw_cfg_enabled(FW_CFG_BLOCK_ALL_UDP)) {
+		if (block_all_udp) {
 			stats_update(STAT_DROP, pkt_len);
-			if (events_enabled)
+			if (security_events_enabled)
 				emit_event_security(iph->saddr, iph->daddr, l4_sport, l4_dport, IPPROTO_UDP, PKT_ACTION_DROP, (__u16)pkt_len);
 			return XDP_DROP;
 		}
 
 		{
-			__u16 port = l4_dport;
+			__u32 port = l4_dport;
 
 			blocked = bpf_map_lookup_elem(&blocked_ports_udp, &port);
 			if (blocked && *blocked) {
 				stats_update(STAT_DROP, pkt_len);
-				if (events_enabled)
+				if (security_events_enabled)
 					emit_event_security(iph->saddr, iph->daddr, l4_sport, l4_dport, IPPROTO_UDP, PKT_ACTION_DROP, (__u16)pkt_len);
 				return XDP_DROP;
 			}
@@ -446,10 +454,10 @@ int xdp_firewall_fwd(struct xdp_md *ctx)
 		if (parse_icmphdr_common(&nh, data_end, &icmph) < 0)
 			goto fwd_check;
 
-		if (fw_cfg_enabled(FW_CFG_BLOCK_ICMP_PING) &&
+		if (block_icmp_ping &&
 		    icmph->type == ICMP_ECHO) {
 			stats_update(STAT_DROP, pkt_len);
-			if (events_enabled)
+			if (security_events_enabled)
 				emit_event_security(iph->saddr, iph->daddr, 0, 0, IPPROTO_ICMP, PKT_ACTION_DROP, (__u16)pkt_len);
 			return XDP_DROP;
 		}
@@ -459,7 +467,7 @@ fwd_check:
 	/* ── Step 6: TTL Guard ────────────────────────────────────────────── */
 	if (iph->ttl <= 1) {
 		stats_update(STAT_TTL_EXCEEDED, pkt_len);
-		if (events_enabled)
+		if (security_events_enabled)
 			emit_event_security(iph->saddr, iph->daddr, l4_sport, l4_dport, iph->protocol, PKT_ACTION_TTL_EXCEEDED, (__u16)pkt_len);
 		return XDP_PASS;
 	}

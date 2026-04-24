@@ -1,20 +1,34 @@
 import asyncio
+import json
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import Body, FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+import cpu_metrics as cpu_metrics_module
+import metrics as metrics_module
+import node_registry as node_reg
 import pkt_editor
 import pktgen_config as cfg_module
 import runner
 from models import (
+    DescriptionRequest,
+    ExperimentSummary,
     JobStatus,
+    LatencyMetrics,
+    MetricsSummary,
+    NodeEntry,
+    NodeRegistryResponse,
+    NodeUpdateRequest,
     PlaybookInfo,
     PktFileContent,
     PktFileInfo,
     PktgenConfig,
+    RenameRequest,
+    RunOptions,
     SignalRequest,
 )
 from ws_manager import manager
@@ -47,9 +61,9 @@ def list_playbooks():
 
 
 @app.post("/api/playbooks/{playbook_id}/run")
-async def run_playbook(playbook_id: str):
+async def run_playbook(playbook_id: str, opts: RunOptions = Body(default=RunOptions())):
     try:
-        job = await runner.launch_playbook(playbook_id)
+        job = await runner.launch_playbook(playbook_id, variant=opts.variant)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     return {"job_id": job.job_id}
@@ -93,6 +107,31 @@ async def send_signal(job_id: str, req: SignalRequest):
     return {"ok": True}
 
 
+# ─── Node Registry ───────────────────────────────────────────────────────────
+
+def _registry_to_response(data: dict) -> NodeRegistryResponse:
+    nodes = [NodeEntry(ip=ip, **entry) for ip, entry in data.items()]
+    return NodeRegistryResponse(nodes=nodes)
+
+
+@app.get("/api/node-registry", response_model=NodeRegistryResponse)
+def get_node_registry():
+    return _registry_to_response(node_reg.read_registry())
+
+
+@app.patch("/api/node-registry/{ip}", response_model=NodeRegistryResponse)
+def update_node(ip: str, body: NodeUpdateRequest):
+    data = node_reg.read_registry()
+    if ip not in data:
+        raise HTTPException(status_code=404, detail=f"Unknown node: {ip}")
+    if body.enabled is not None:
+        data[ip]["enabled"] = body.enabled
+    if body.pkt_file is not None:
+        data[ip]["pkt_file"] = body.pkt_file
+    node_reg.write_registry(data)
+    return _registry_to_response(data)
+
+
 # ─── PKT files ───────────────────────────────────────────────────────────────
 
 @app.get("/api/pkt-files", response_model=list[PktFileInfo])
@@ -134,7 +173,7 @@ def update_pktgen_config(body: PktgenConfig):
 
 # ─── Results ─────────────────────────────────────────────────────────────────
 
-@app.get("/api/results")
+@app.get("/api/results", response_model=list[ExperimentSummary])
 def list_results():
     if not RESULTS_DIR.exists():
         return []
@@ -143,14 +182,120 @@ def list_results():
         key=lambda d: d.stat().st_mtime,
         reverse=True,
     )
-    return [
-        {
-            "name": d.name,
-            "mtime": d.stat().st_mtime,
-            "files": [f.name for f in sorted(d.iterdir())],
-        }
-        for d in dirs
-    ]
+    result = []
+    for d in dirs:
+        display_name = None
+        description = None
+        meta_path = d / "meta.json"
+        if meta_path.exists():
+            try:
+                meta = json.loads(meta_path.read_text())
+                display_name = meta.get("display_name")
+                description = meta.get("description")
+            except Exception:
+                pass
+        result.append(ExperimentSummary(
+            name=d.name,
+            mtime=d.stat().st_mtime,
+            files=[f.name for f in sorted(d.iterdir())],
+            display_name=display_name,
+            description=description,
+        ))
+    return result
+
+
+@app.get("/api/results/{exp_name}/metrics", response_model=MetricsSummary)
+def get_metrics(exp_name: str):
+    if ".." in exp_name or "/" in exp_name:
+        raise HTTPException(status_code=400, detail="Invalid experiment name")
+    exp_dir = RESULTS_DIR / exp_name
+    if not exp_dir.exists() or not exp_dir.is_dir():
+        raise HTTPException(status_code=404, detail="Experiment not found")
+    try:
+        data = metrics_module.get_or_compute_metrics(exp_dir)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=f"CSV missing: {e}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Metrics computation failed: {e}")
+    return MetricsSummary(**data)
+
+
+@app.put("/api/results/{exp_name}/description")
+def update_description(exp_name: str, body: DescriptionRequest):
+    if ".." in exp_name or "/" in exp_name:
+        raise HTTPException(status_code=400, detail="Invalid experiment name")
+    exp_dir = RESULTS_DIR / exp_name
+    if not exp_dir.exists() or not exp_dir.is_dir():
+        raise HTTPException(status_code=404, detail="Experiment not found")
+    meta_path = exp_dir / "meta.json"
+    meta = {}
+    if meta_path.exists():
+        try:
+            meta = json.loads(meta_path.read_text())
+        except Exception:
+            pass
+    meta["description"] = body.description
+    meta_path.write_text(json.dumps(meta, indent=2))
+    return {"ok": True}
+
+
+@app.get("/api/results/{exp_name}/cpu/{node}")
+def get_cpu_timeseries(exp_name: str, node: str):
+    if ".." in exp_name or "/" in exp_name:
+        raise HTTPException(status_code=400, detail="Invalid experiment name")
+    if node not in ("node1", "node4", "node5", "node6"):
+        raise HTTPException(status_code=400, detail="Invalid node")
+    exp_dir = RESULTS_DIR / exp_name
+    if not exp_dir.exists() or not exp_dir.is_dir():
+        raise HTTPException(status_code=404, detail="Experiment not found")
+    try:
+        csv_path = cpu_metrics_module.get_or_parse_cpu_csv(exp_dir, node)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"CPU CSV parse failed: {e}")
+    if csv_path is None:
+        raise HTTPException(status_code=404, detail="CPU data not available for this node")
+    return FileResponse(csv_path, media_type="text/csv")
+
+
+@app.get("/api/results/{exp_name}/latency", response_model=LatencyMetrics)
+def get_latency(exp_name: str):
+    if ".." in exp_name or "/" in exp_name:
+        raise HTTPException(status_code=400, detail="Invalid experiment name")
+    exp_dir = RESULTS_DIR / exp_name
+    if not exp_dir.exists() or not exp_dir.is_dir():
+        raise HTTPException(status_code=404, detail="Experiment not found")
+    latency_path = exp_dir / "node5_latency.log"
+    if not latency_path.exists():
+        raise HTTPException(status_code=404, detail="Latency data not available")
+    try:
+        rows = latency_path.read_text().splitlines()
+        # skip header; CSV format: port,min_us,avg_us,max_us,num_pkts
+        for line in rows[1:]:
+            parts = line.strip().split(",")
+            if len(parts) == 5 and parts[0] == "0":
+                return LatencyMetrics(
+                    min_ns=float(parts[1]) * 1000,
+                    avg_ns=float(parts[2]) * 1000,
+                    max_ns=float(parts[3]) * 1000,
+                    jitter_ns=0,
+                )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Latency parse failed: {e}")
+    raise HTTPException(status_code=404, detail="Latency data not available")
+
+
+@app.put("/api/results/{exp_name}/rename")
+def rename_experiment(exp_name: str, body: RenameRequest):
+    if ".." in exp_name or "/" in exp_name:
+        raise HTTPException(status_code=400, detail="Invalid experiment name")
+    exp_dir = RESULTS_DIR / exp_name
+    if not exp_dir.exists() or not exp_dir.is_dir():
+        raise HTTPException(status_code=404, detail="Experiment not found")
+    display_name = body.display_name.strip()
+    if not display_name:
+        raise HTTPException(status_code=422, detail="display_name must not be empty")
+    (exp_dir / "meta.json").write_text(json.dumps({"display_name": display_name}, indent=2))
+    return {"ok": True, "display_name": display_name}
 
 
 @app.get("/api/results/{exp_name}/{node_file}")

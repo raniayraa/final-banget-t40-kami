@@ -21,10 +21,41 @@ export interface PktgenConfig {
   nodes: Record<string, string>
 }
 
+export interface NodeEntry {
+  ip: string
+  label: string
+  pkt_file: string
+  enabled: boolean
+}
+
+export interface NodeRegistryResponse {
+  nodes: NodeEntry[]
+}
+
 export interface ExperimentResult {
   name: string
   mtime: number
   files: string[]
+  display_name: string | null
+  description: string | null
+}
+
+export interface LatencyMetrics {
+  min_ns: number
+  avg_ns: number
+  max_ns: number
+  jitter_ns: number
+}
+
+export interface MetricsSummary {
+  peak_forwarded_pps: number
+  peak_forwarded_gbps: number
+  sender_injection_pps: number
+  packet_loss_pct: number
+  nic_drop_rate_mean: number
+  nic_drop_rate_peak: number
+  forwarding_efficiency_pct: number
+  throughput_std_dev: number
 }
 
 export interface CsvRow {
@@ -78,9 +109,20 @@ async function put<T>(path: string, body: unknown): Promise<T> {
   return res.json()
 }
 
+async function patch<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(BASE + path, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
 export const api = {
   listPlaybooks: () => get<PlaybookInfo[]>('/playbooks'),
-  runPlaybook: (id: string) => post<{ job_id: string }>(`/playbooks/${id}/run`),
+  runPlaybook: (id: string, variant?: string) =>
+    post<{ job_id: string }>(`/playbooks/${id}/run`, variant ? { variant } : undefined),
   runAll: () => post<{ job_id: string }>('/jobs/run-all'),
   getJob: (jobId: string) => get<JobStatus>(`/jobs/${jobId}`),
   sendSignal: (jobId: string, signal: 'start_traffic' | 'stop_traffic' | 'abort') =>
@@ -92,9 +134,23 @@ export const api = {
   getPktgenConfig: () => get<PktgenConfig>('/pktgen-config'),
   savePktgenConfig: (nodes: Record<string, string>) =>
     put<{ ok: boolean }>('/pktgen-config', { nodes }),
+  getNodeRegistry: () => get<NodeRegistryResponse>('/node-registry'),
+  updateNode: (ip: string, update: { enabled?: boolean; pkt_file?: string }) =>
+    patch<NodeRegistryResponse>(`/node-registry/${encodeURIComponent(ip)}`, update),
   listResults: () => get<ExperimentResult[]>('/results'),
   getResultCsv: (exp: string, file: string) => get<NodeCsvData>(`/results/${exp}/${file}`),
   getResultPkt: (exp: string, file: string) => get<PktFileData>(`/results/${exp}/${file}`),
+  renameExperiment: (exp: string, displayName: string) =>
+    put<{ ok: boolean; display_name: string }>(`/results/${exp}/rename`, { display_name: displayName }),
+  updateDescription: (exp: string, description: string) =>
+    put<{ ok: boolean }>(`/results/${exp}/description`, { description }),
+  getMetrics: (exp: string) => get<MetricsSummary>(`/results/${exp}/metrics`),
+  getCpuTimeseries: (exp: string, node: string): Promise<string> =>
+    fetch(BASE + `/results/${exp}/cpu/${node}`).then(r => {
+      if (!r.ok) throw new Error(r.statusText)
+      return r.text()
+    }),
+  getLatency: (exp: string) => get<LatencyMetrics>(`/results/${exp}/latency`),
 }
 
 export function createJobWebSocket(

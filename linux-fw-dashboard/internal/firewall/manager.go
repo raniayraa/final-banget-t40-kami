@@ -44,11 +44,15 @@ func (m *Manager) Start() error {
 		return fmt.Errorf("flush %s: %w", chainName, err)
 	}
 
-	// Insert the jump into INPUT only if it doesn't already exist.
+	// Insert the jump into INPUT and FORWARD only if it doesn't already exist.
 	if err := ipt("-C", "INPUT", "-j", chainName); err != nil {
-		// -C returned non-zero → the rule doesn't exist, so insert it.
 		if err2 := ipt("-I", "INPUT", "1", "-j", chainName); err2 != nil {
 			return fmt.Errorf("insert INPUT jump: %w", err2)
+		}
+	}
+	if err := ipt("-C", "FORWARD", "-j", chainName); err != nil {
+		if err2 := ipt("-I", "FORWARD", "1", "-j", chainName); err2 != nil {
+			return fmt.Errorf("insert FORWARD jump: %w", err2)
 		}
 	}
 
@@ -66,6 +70,7 @@ func (m *Manager) Stop() error {
 	defer m.mu.Unlock()
 
 	_ = ipt("-D", "INPUT", "-j", chainName)
+	_ = ipt("-D", "FORWARD", "-j", chainName)
 	_ = ipt("-F", chainName)
 	_ = ipt("-X", chainName)
 

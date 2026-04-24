@@ -40,13 +40,17 @@ export default function FirewallConfig() {
     } catch (e: any) { flash('Error: ' + e.message) }
   }
 
+  const handleSaveResult = (res: { status: string; warning?: string }, label: string) => {
+    flash(res.warning ? `${label} saved — ${res.warning}` : `${label} saved`)
+  }
+
   const saveFlags = async (flags: FwFlags) => {
     if (!config) return
     setSaving(true)
     try {
-      await api.putConfig({ flags })
+      const res = await api.putConfig({ flags })
       setConfig({ ...config, flags })
-      flash('Flags saved')
+      handleSaveResult(res, 'Flags')
     } catch (e: any) { flash('Error: ' + e.message) }
     finally { setSaving(false) }
   }
@@ -55,9 +59,9 @@ export default function FirewallConfig() {
     if (!config) return
     setSaving(true)
     try {
-      await api.putConfig({ [kind]: ports })
+      const res = await api.putConfig({ [kind]: ports })
       setConfig({ ...config, [kind]: ports })
-      flash('Ports saved')
+      handleSaveResult(res, 'Ports')
     } catch (e: any) { flash('Error: ' + e.message) }
     finally { setSaving(false) }
   }
@@ -66,9 +70,9 @@ export default function FirewallConfig() {
     if (!config) return
     setSaving(true)
     try {
-      await api.putConfig({ protos })
+      const res = await api.putConfig({ protos })
       setConfig({ ...config, protos })
-      flash('Protocols saved')
+      handleSaveResult(res, 'Protocols')
     } catch (e: any) { flash('Error: ' + e.message) }
     finally { setSaving(false) }
   }

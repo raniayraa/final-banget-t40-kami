@@ -11,6 +11,8 @@ const FLAG_LABELS: { key: keyof FwFlags; label: string; desc: string }[] = [
   { key: 'block_multicast',    label: 'Block Multicast',       desc: 'Drop packets to 224.0.0.0/4' },
   { key: 'block_all_tcp',      label: 'Block ALL TCP',         desc: 'Drop every TCP packet (overrides port list)' },
   { key: 'block_all_udp',      label: 'Block ALL UDP',         desc: 'Drop every UDP packet (overrides port list)' },
+  { key: 'security_events_enabled', label: 'Log Security Events', desc: 'Record DROP and TTL-exceeded packets to database — recommended ON' },
+  { key: 'events_enabled',     label: 'Log Normal Traffic',    desc: 'Sample PASS/TX/REDIRECT packets (1:1000) — disable for maximum forwarding throughput' },
 ]
 
 export default function FirewallConfig() {

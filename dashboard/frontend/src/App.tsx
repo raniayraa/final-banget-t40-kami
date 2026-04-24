@@ -3,12 +3,14 @@ import { Playbooks } from './pages/Playbooks'
 import { PktEditor } from './pages/PktEditor'
 import { PktgenConfig } from './pages/PktgenConfig'
 import { Results } from './pages/Results'
+import { Compare } from './pages/Compare'
 
 const NAV_LINKS = [
   { to: '/',              label: 'Playbooks' },
   { to: '/pkt-editor',    label: 'PKT Editor' },
   { to: '/pktgen-config', label: 'Pktgen Config' },
   { to: '/results',       label: 'Results' },
+  { to: '/compare',       label: 'Compare' },
 ]
 
 function NavBar() {
@@ -61,6 +63,7 @@ export default function App() {
             <Route path="/pkt-editor" element={<PktEditor />} />
             <Route path="/pktgen-config" element={<PktgenConfig />} />
             <Route path="/results" element={<Results />} />
+            <Route path="/compare" element={<Compare />} />
           </Routes>
         </main>
       </div>

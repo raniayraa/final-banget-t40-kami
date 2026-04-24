@@ -1,8 +1,6 @@
 package maps
 
 import (
-	"errors"
-
 	"github.com/cilium/ebpf"
 )
 
@@ -17,39 +15,36 @@ var DefaultTCPPorts = []uint16{20, 21, 22, 23, 69, 135, 137, 138, 139, 445, 1433
 // DNS, TFTP, NTP, NetBIOS, SNMP, Memcached.
 var DefaultUDPPorts = []uint16{53, 69, 123, 137, 138, 161, 162, 11211}
 
-// AddPort inserts a port into a blocked_ports_tcp or blocked_ports_udp HASH map.
+// AddPort marks a port as blocked in a blocked_ports_tcp or blocked_ports_udp ARRAY map.
 func AddPort(m *ebpf.Map, port uint16) error {
 	v := uint8(1)
-	return m.Put(port, v)
+	return m.Put(uint32(port), v)
 }
 
-// RemovePort deletes a port from a blocked ports map.
-// Returns nil if the port was not present.
+// RemovePort unblocks a port by zeroing its entry in the ARRAY map.
 func RemovePort(m *ebpf.Map, port uint16) error {
-	err := m.Delete(port)
-	if errors.Is(err, ebpf.ErrKeyNotExist) {
-		return nil
-	}
-	return err
+	v := uint8(0)
+	return m.Put(uint32(port), v)
 }
 
-// ListPorts iterates a blocked ports HASH map and returns all blocked port numbers.
+// ListPorts iterates the ARRAY map and returns all ports where the value is non-zero.
 func ListPorts(m *ebpf.Map) ([]uint16, error) {
 	var ports []uint16
-	var key uint16
+	var key uint32
 	iter := m.Iterate()
 	for {
 		var val uint8
 		if !iter.Next(&key, &val) {
 			break
 		}
-		ports = append(ports, key)
+		if val != 0 {
+			ports = append(ports, uint16(key))
+		}
 	}
 	return ports, iter.Err()
 }
 
-// SetPorts replaces the entire contents of a blocked ports map with the given list.
-// Any port not in the list is removed.
+// SetPorts replaces the blocked port list: zeros out removed ports, sets new ones.
 func SetPorts(m *ebpf.Map, newPorts []uint16) error {
 	existing, err := ListPorts(m)
 	if err != nil {
@@ -61,7 +56,6 @@ func SetPorts(m *ebpf.Map, newPorts []uint16) error {
 		wanted[p] = struct{}{}
 	}
 
-	// Remove ports no longer wanted
 	for _, p := range existing {
 		if _, ok := wanted[p]; !ok {
 			if err := RemovePort(m, p); err != nil {
@@ -70,7 +64,6 @@ func SetPorts(m *ebpf.Map, newPorts []uint16) error {
 		}
 	}
 
-	// Add new ports
 	for _, p := range newPorts {
 		if err := AddPort(m, p); err != nil {
 			return err

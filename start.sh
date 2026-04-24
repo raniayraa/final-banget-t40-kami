@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Cache sudo credentials upfront so background xdpd doesn't prompt
+sudo -v
+
 # Kill processes on backend and frontend ports
 for PORT in 8765 5173; do
     PID=$(lsof -ti tcp:$PORT)
@@ -25,7 +28,19 @@ cd ~/final_t40/dashboard/frontend
 nohup npm run dev -- --host > /tmp/frontend.log 2>&1 &
 echo "Frontend PID: $!"
 
+# Start xdpd in background
+echo "Starting xdpd..."
+cd ~/final_t40/xdp-go-optimized
+nohup sudo ./xdpd -iface enp1s0f1np1 -redirect-dev enp1s0f0np0 -addr :8080 -static ./frontend/dist -db /tmp/xdpd.db > /tmp/xdpd.log 2>&1 &
+echo "xdpd PID: $!"
+
+# Start fwd in background
+echo "Starting fwd..."
+cd ~/final_t40/linux-fw-dashboard
+nohup sudo ./fwd -addr :8081 -static ./frontend/dist -config ./config.json > /tmp/fwd.log 2>&1 &
+echo "fwd PID: $!"
+
 echo ""
-echo "Both services started. Logs:"
-echo "  Backend:  tail -f /tmp/backend.log"
-echo "  Frontend: tail -f /tmp/frontend.log"
+echo "All services started. Following logs (Ctrl+C to stop)..."
+echo ""
+tail -f /tmp/backend.log /tmp/frontend.log /tmp/xdpd.log /tmp/fwd.log

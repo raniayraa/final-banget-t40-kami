@@ -19,14 +19,15 @@ export function Playbooks() {
   const [runs, setRuns] = useState<Record<string, RunState>>({}) // keyed by playbookId
   const [activeId, setActiveId] = useState<string | null>(null)
   const [allJobId, setAllJobId] = useState<string | null>(null)
+  const [variant05, setVariant05] = useState<'kernel' | 'xdp'>('kernel')
 
   useEffect(() => {
     api.listPlaybooks().then(setPlaybooks).catch(console.error)
   }, [])
 
-  const startRun = async (playbookId: string) => {
+  const startRun = async (playbookId: string, variant?: string) => {
     try {
-      const { job_id } = await api.runPlaybook(playbookId)
+      const { job_id } = await api.runPlaybook(playbookId, variant)
       setRuns(prev => ({
         ...prev,
         [playbookId]: { jobId: job_id, playbookId, status: 'running', pauseState: null },
@@ -94,36 +95,55 @@ export function Playbooks() {
             cursor: 'pointer',
           }}
         >
-          Run All (00→05)
+          Run All
         </button>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {playbooks.map(pb => (
-          <div key={pb.id}>
-            <PlaybookCard
-              playbook={pb}
-              status={getStatus(pb.id)}
-              onRun={() => startRun(pb.id)}
-              onAbort={() => handleAbort(pb.id)}
-            />
-            {activeId === pb.id && runs[pb.id] && (
-              <div style={{ marginTop: 8 }}>
-                <LogViewer
-                  jobId={runs[pb.id].jobId}
-                  onStateChange={handleStateChange(pb.id)}
-                  onDone={handleDone(pb.id)}
-                />
-                {pb.id === '04' && (
-                  <TrafficControl
+        {playbooks.map(pb => {
+          const isRunning = getStatus(pb.id) === 'running' || getStatus(pb.id) === 'paused'
+          return (
+            <div key={pb.id}>
+              <PlaybookCard
+                playbook={pb}
+                status={getStatus(pb.id)}
+                onRun={() => startRun(pb.id, pb.id === '05' ? variant05 : undefined)}
+                onAbort={() => handleAbort(pb.id)}
+              />
+              {pb.id === '05' && !isRunning && (
+                <div style={{ display: 'flex', gap: 16, marginTop: 6, paddingLeft: 4 }}>
+                  {(['kernel', 'xdp'] as const).map(v => (
+                    <label key={v} style={{ cursor: 'pointer', fontSize: 13, color: '#444', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <input
+                        type="radio"
+                        name="variant05"
+                        value={v}
+                        checked={variant05 === v}
+                        onChange={() => setVariant05(v)}
+                      />
+                      {v === 'kernel' ? 'Kernel' : 'XDP'}
+                    </label>
+                  ))}
+                </div>
+              )}
+              {activeId === pb.id && runs[pb.id] && (
+                <div style={{ marginTop: 8 }}>
+                  <LogViewer
                     jobId={runs[pb.id].jobId}
-                    pauseState={runs[pb.id].pauseState}
+                    onStateChange={handleStateChange(pb.id)}
+                    onDone={handleDone(pb.id)}
                   />
-                )}
-              </div>
-            )}
-          </div>
-        ))}
+                  {pb.id === '04' && (
+                    <TrafficControl
+                      jobId={runs[pb.id].jobId}
+                      pauseState={runs[pb.id].pauseState}
+                    />
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        })}
       </div>
 
       {allJobId && activeId === '__all__' && (

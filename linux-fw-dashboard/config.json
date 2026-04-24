@@ -1,0 +1,14 @@
+{
+  "flags": {
+    "block_icmp_ping": false,
+    "block_ip_fragments": false,
+    "block_malformed_tcp": false,
+    "block_all_tcp": false,
+    "block_all_udp": false,
+    "block_broadcast": false,
+    "block_multicast": false
+  },
+  "tcp_ports": null,
+  "udp_ports": [],
+  "protos": null
+}

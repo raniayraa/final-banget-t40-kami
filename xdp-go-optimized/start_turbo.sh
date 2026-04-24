@@ -122,7 +122,7 @@ done
 
 # ── 7. Launch xdpd ───────────────────────────────────────────────────────────
 echo; echo "=== 7. Launch xdpd (turbo mode) ==="
-echo "  taskset -c $ALL_CPUS $XDPD -iface $IFACE -redirect-dev $REDIRECT_DEV -config $TURBO_CFG"
+echo "  taskset -c $ALL_CPUS $XDPD -iface $IFACE -redirect-dev $REDIRECT_DEV -config $TURBO_CFG -static $SCRIPT_DIR/frontend/dist"
 echo "  Ctrl+C untuk stop"
 echo
 
@@ -139,7 +139,9 @@ taskset -c "$ALL_CPUS" "$XDPD" \
     -iface "$IFACE" \
     -redirect-dev "$REDIRECT_DEV" \
     -config "$TURBO_CFG" \
-    -db "$DB_PATH" &
+    -db "$DB_PATH" \
+    -addr :9898 \
+    -static "$SCRIPT_DIR/frontend/dist" &
 XDPD_PID=$!
 
 wait "$XDPD_PID"

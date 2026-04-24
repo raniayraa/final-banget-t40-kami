@@ -42,6 +42,15 @@ func main() {
 	collector := stats.NewCollector()
 	srv       := api.NewServer(mgr, collector, *cfgPath, *iface)
 
+	if configHasRules(cfg) {
+		if err := mgr.Start(); err != nil {
+			log.Printf("auto-start firewall: %v", err)
+		} else {
+			log.Println("firewall auto-started from saved config")
+			collector.Start("FW_CHAIN")
+		}
+	}
+
 	httpSrv := &http.Server{
 		Addr:         *addr,
 		Handler:      srv.Router(*static),
@@ -73,4 +82,14 @@ func main() {
 		}
 	}
 	log.Println("bye")
+}
+
+func configHasRules(cfg *config.FwConfig) bool {
+	if cfg == nil {
+		return false
+	}
+	f := cfg.Flags
+	return len(cfg.TCPPorts) > 0 || len(cfg.UDPPorts) > 0 || len(cfg.Protos) > 0 ||
+		f.BlockICMPPing || f.BlockIPFragments || f.BlockMalformedTC ||
+		f.BlockAllTCP || f.BlockAllUDP || f.BlockBroadcast || f.BlockMulticast
 }

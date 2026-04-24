@@ -17,9 +17,16 @@ PLAYBOOKS = [
     {"id": "01", "filename": "01_basic_setup.yaml",            "description": "Configure network interfaces and IP addresses"},
     {"id": "02", "filename": "02_setup_route.yaml",            "description": "Set up static routing and validate connectivity"},
     {"id": "03", "filename": "03_setup_scripts.yaml",          "description": "Deploy pktgen scripts and bind NICs to DPDK"},
-    {"id": "04", "filename": "04_start_pktgen.yaml",           "description": "Launch pktgen and control traffic generation"},
     {"id": "05", "filename": "05_setup_kernel_node6.yaml",     "description": "Re-assign IPs and static ARP on Node 6 after DPDK binding"},
+    {"id": "04", "filename": "04_start_pktgen.yaml",           "description": "Launch pktgen and control traffic generation"},
 ]
+
+VARIANTS = {
+    "05": {
+        "kernel": "05_setup_kernel_node6.yaml",
+        "xdp":    "05_setup_xdp_node6.yaml",
+    }
+}
 
 SIGNAL_START_MARKER = "DASHBOARD_SIGNAL: waiting_for_start"
 SIGNAL_STOP_MARKER  = "DASHBOARD_SIGNAL: waiting_for_stop"
@@ -55,8 +62,14 @@ def get_playbook_path(playbook_id: str) -> Optional[str]:
     return None
 
 
-async def launch_playbook(playbook_id: str) -> Job:
-    path = get_playbook_path(playbook_id)
+async def launch_playbook(playbook_id: str, variant: str | None = None) -> Job:
+    if variant and playbook_id in VARIANTS:
+        filename = VARIANTS[playbook_id].get(variant)
+        if filename is None:
+            raise ValueError(f"Unknown variant '{variant}' for playbook {playbook_id}")
+        path = str(ANSIBLE_DIR / filename)
+    else:
+        path = get_playbook_path(playbook_id)
     if path is None:
         raise ValueError(f"Unknown playbook id: {playbook_id}")
 

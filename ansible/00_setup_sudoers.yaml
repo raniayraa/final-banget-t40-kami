@@ -1,0 +1,14 @@
+---
+- name: Configure passwordless sudo for telmat
+  hosts: targets
+  become: true
+
+  tasks:
+    - name: Add telmat NOPASSWD sudoers entry
+      ansible.builtin.copy:
+        dest: /etc/sudoers.d/telmat
+        content: "telmat ALL=(ALL) NOPASSWD: ALL\n"
+        owner: root
+        group: root
+        mode: "0440"
+        validate: /usr/sbin/visudo -cf %s

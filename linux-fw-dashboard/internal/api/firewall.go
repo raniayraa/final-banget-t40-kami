@@ -78,5 +78,9 @@ func (s *Server) handlePutConfig(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	resp := map[string]string{"status": "ok"}
+	if !s.mgr.IsRunning() {
+		resp["warning"] = "firewall not running — rules saved but not yet active"
+	}
+	writeJSON(w, http.StatusOK, resp)
 }

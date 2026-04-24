@@ -17,6 +17,14 @@ end
 print("\n--- Starting per-second stats logging (all ports, until quit) ---\n")
 
 while true do
+    local stop_f = io.open("/tmp/stop_getstats", "r")
+    if stop_f then
+        stop_f:close()
+        os.remove("/tmp/stop_getstats")
+        print("stop_getstats signal received, ending stats collection")
+        break
+    end
+
     local t_start = os.clock()
     local time_str = timestamp()
     local stats = pktgen.portStats('all', 'port')

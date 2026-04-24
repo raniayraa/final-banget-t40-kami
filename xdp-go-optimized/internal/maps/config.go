@@ -15,8 +15,9 @@ const (
 	FwCfgBlockAllUDP      = uint32(4)
 	FwCfgBlockBroadcast   = uint32(5)
 	FwCfgBlockMulticast   = uint32(6)
-	FwCfgEventsEnabled    = uint32(7) // 0=turbo/no-events, 1=observability mode (default)
-	FwCfgMax              = uint32(8)
+	FwCfgEventsEnabled       = uint32(7) // 0=no PASS/TX/REDIRECT events, 1=sampled logging
+	FwCfgSecurityEvents      = uint32(8) // 0=no DROP/TTL_EXCEEDED events, 1=security logging (default)
+	FwCfgMax                 = uint32(9)
 )
 
 // FwFlags holds all 8 firewall feature flags.
@@ -28,26 +29,28 @@ type FwFlags struct {
 	BlockAllUDP      bool `json:"block_all_udp"`
 	BlockBroadcast   bool `json:"block_broadcast"`
 	BlockMulticast   bool `json:"block_multicast"`
-	EventsEnabled    bool `json:"events_enabled"`
+	EventsEnabled         bool `json:"events_enabled"`
+	SecurityEventsEnabled bool `json:"security_events_enabled"`
 }
 
 // ReadFlags reads all fw_config ARRAY entries.
 func ReadFlags(m *ebpf.Map) (FwFlags, error) {
-	var raw [8]uint8
+	var raw [9]uint8
 	for i := uint32(0); i < FwCfgMax; i++ {
 		if err := m.Lookup(i, &raw[i]); err != nil {
 			return FwFlags{}, fmt.Errorf("lookup fw_config[%d]: %w", i, err)
 		}
 	}
 	return FwFlags{
-		BlockICMPPing:    raw[0] != 0,
-		BlockIPFragments: raw[1] != 0,
-		BlockMalformedTC: raw[2] != 0,
-		BlockAllTCP:      raw[3] != 0,
-		BlockAllUDP:      raw[4] != 0,
-		BlockBroadcast:   raw[5] != 0,
-		BlockMulticast:   raw[6] != 0,
-		EventsEnabled:    raw[7] != 0,
+		BlockICMPPing:         raw[0] != 0,
+		BlockIPFragments:      raw[1] != 0,
+		BlockMalformedTC:      raw[2] != 0,
+		BlockAllTCP:           raw[3] != 0,
+		BlockAllUDP:           raw[4] != 0,
+		BlockBroadcast:        raw[5] != 0,
+		BlockMulticast:        raw[6] != 0,
+		EventsEnabled:         raw[7] != 0,
+		SecurityEventsEnabled: raw[8] != 0,
 	}, nil
 }
 
@@ -74,6 +77,7 @@ func WriteFlags(m *ebpf.Map, f FwFlags) error {
 		{FwCfgBlockBroadcast, f.BlockBroadcast},
 		{FwCfgBlockMulticast, f.BlockMulticast},
 		{FwCfgEventsEnabled, f.EventsEnabled},
+		{FwCfgSecurityEvents, f.SecurityEventsEnabled},
 	}
 	for _, p := range pairs {
 		if err := SetFlag(m, p.key, p.val); err != nil {

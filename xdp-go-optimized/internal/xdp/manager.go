@@ -100,13 +100,14 @@ func (m *Manager) Start() error {
 		return fmt.Errorf("attach XDP to %s: %w", m.ifname, err)
 	}
 
-	// ── Default: events enabled (observability mode) ─────────────────────────
-	// fw_config BPF ARRAY diinisialisasi kernel dengan semua 0.
-	// Set FW_CFG_EVENTS_ENABLED=1 agar ring buffer aktif secara default.
-	// User bisa matikan via PUT /api/config { "flags": { "events_enabled": false } }
-	// atau startup config JSON untuk turbo mode (throughput setara combine-ff).
-	if err := maps.SetFlag(m.objs.FwConfig, maps.FwCfgEventsEnabled, true); err != nil {
-		log.Printf("warn: set events_enabled default: %v", err)
+	// ── Default: security events ON, normal traffic logging OFF ──────────────
+	// fw_config BPF ARRAY is zero-initialized by the kernel.
+	// FW_CFG_SECURITY_EVENTS=1 keeps DROP/TTL_EXCEEDED logged for visibility.
+	// FW_CFG_EVENTS_ENABLED stays 0 — PASS/TX/REDIRECT incur zero ring buffer
+	// overhead, eliminating the DB bottleneck on the forwarding fast path.
+	// Both flags can be toggled at runtime via PUT /api/config.
+	if err := maps.SetFlag(m.objs.FwConfig, maps.FwCfgSecurityEvents, true); err != nil {
+		log.Printf("warn: set security_events_enabled default: %v", err)
 	}
 
 	// ── Seed default port blocklists (only when maps are fresh / empty) ──────
@@ -186,6 +187,9 @@ func (m *Manager) applyConfig() {
 			}
 			if ff.EventsEnabled != nil {
 				flags.EventsEnabled = *ff.EventsEnabled
+			}
+			if ff.SecurityEventsEnabled != nil {
+				flags.SecurityEventsEnabled = *ff.SecurityEventsEnabled
 			}
 			if err := maps.WriteFlags(m.objs.FwConfig, flags); err != nil {
 				log.Printf("warn: write fw_config: %v", err)

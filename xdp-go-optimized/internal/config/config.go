@@ -52,7 +52,8 @@ type FwFlagsConfig struct {
 	BlockAllUDP      *bool `json:"block_all_udp,omitempty"`
 	BlockBroadcast   *bool `json:"block_broadcast,omitempty"`
 	BlockMulticast   *bool `json:"block_multicast,omitempty"`
-	EventsEnabled    *bool `json:"events_enabled,omitempty"` // false = turbo mode (no ring buf)
+	EventsEnabled         *bool `json:"events_enabled,omitempty"`          // true = sample PASS/TX/REDIRECT (default: off)
+	SecurityEventsEnabled *bool `json:"security_events_enabled,omitempty"` // true = log DROP/TTL_EXCEEDED (default: on)
 }
 
 // BlockedPorts holds TCP and UDP destination port lists.

@@ -72,7 +72,7 @@ export const api = {
 
   getConfig: () => fetchJSON<ConfigResponse>(`${BASE}/config`),
   putConfig: (body: ConfigRequest) =>
-    fetchJSON<{ status: string }>(`${BASE}/config`, {
+    fetchJSON<{ status: string; warning?: string }>(`${BASE}/config`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),

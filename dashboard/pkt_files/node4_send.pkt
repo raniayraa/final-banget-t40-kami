@@ -29,9 +29,9 @@ range 0 src port min   1024
 range 0 src port max   1033
 range 0 src port inc   1
 
-range 0 dst port start 5433
-range 0 dst port min   5433
-range 0 dst port max   5442
+range 0 dst port start 1024
+range 0 dst port min   1024
+range 0 dst port max   1033
 range 0 dst port inc   1
 
 range 0 size start 64

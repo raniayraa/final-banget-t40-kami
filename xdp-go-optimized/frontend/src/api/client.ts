@@ -15,6 +15,8 @@ export interface FwFlags {
   block_all_udp: boolean
   block_broadcast: boolean
   block_multicast: boolean
+  events_enabled: boolean
+  security_events_enabled: boolean
 }
 
 export interface ConfigResponse {
