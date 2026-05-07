@@ -1,4 +1,4 @@
-package.path = package.path .. ";?.lua;test/?.lua;app/?.lua;"
+package.path = package.path ..";?.lua;test/?.lua;app/?.lua;"
 
 print(string.format("Lua Version      : %s", pktgen.info.Lua_Version))
 print(string.format("Pktgen Version   : %s", pktgen.info.Pktgen_Version))
@@ -6,44 +6,46 @@ print(string.format("Pktgen Copyright : %s", pktgen.info.Pktgen_Copyright))
 print(string.format("Pktgen Authors   : %s", pktgen.info.Pktgen_Authors))
 
 local log_file = "/tmp/pktgen_stats.log"
+
+local function now()
+    return os.date("%Y-%m-%d %H:%M:%S.000")
+end
+
+local function stop_requested()
+    local f = io.open("/tmp/stop_getstats", "r")
+    if f then f:close() return true end
+    return false
+end
+
 local f = io.open(log_file, "w")
 f:write("Time,Port,Metric,Value\n")
 f:close()
 
-function timestamp()
-    return os.date("%Y-%m-%d %H:%M:%S.000")
-end
+print("\n--- Starting full per-second stats logging ---\n")
 
-print("\n--- Starting per-second stats logging (all ports, until quit) ---\n")
+for i = 0, 90 do
+    if stop_requested() then break end
 
-while true do
-    local stop_f = io.open("/tmp/stop_getstats", "r")
-    if stop_f then
-        stop_f:close()
-        os.remove("/tmp/stop_getstats")
-        print("stop_getstats signal received, ending stats collection")
-        break
-    end
-
-    local t_start = os.clock()
-    local time_str = timestamp()
     local stats = pktgen.portStats('all', 'port')
+    local ts = now()
 
-    for port, metrics in pairs(stats) do
-        if type(metrics) == "table" then
-            for metric, value in pairs(metrics) do
-                local line = string.format("%s,%s,%s,%s\n",
-                    time_str, tostring(port), tostring(metric), tostring(value))
-                local ff = io.open(log_file, "a")
-                ff:write(line)
-                ff:close()
+    for k, v in pairs(stats) do
+        if type(v) == "table" then
+            for subk, subv in pairs(v) do
+                print(string.format("Key: %s\n  %s: %s", tostring(k), tostring(subk), tostring(subv)))
+                local f = io.open(log_file, "a")
+                f:write(string.format("%s,%s,%s,%s\n", ts, tostring(k), tostring(subk), tostring(subv)))
+                f:close()
             end
+        else
+            print(string.format("Key: %s\n  Value: %s", tostring(k), tostring(v)))
+            local f = io.open(log_file, "a")
+            f:write(string.format("%s,%s,Value,%s\n", ts, tostring(k), tostring(v)))
+            f:close()
         end
     end
 
-    local t_elapsed = os.clock() - t_start
-    local t_remain = 1.0 - t_elapsed
-    if t_remain > 0 then
-        pktgen.delay(math.floor(t_remain * 1000))
-    end
+    pktgen.delay(1000) -- delay for 1 second
 end
+
+print("\nFinished logging to " .. log_file .. "\nHello World!!!!\n")

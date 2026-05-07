@@ -1,0 +1,7 @@
+stop 0
+set 0 size 64
+set 0 src mac 64:9d:99:ff:f5:7a
+set 0 dst mac 64:9d:99:ff:f5:9b
+set 0 src ip 192.168.46.1
+set 0 dst ip 192.168.56.5
+set 0 proto udp

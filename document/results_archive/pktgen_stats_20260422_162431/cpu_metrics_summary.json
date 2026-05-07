@@ -1,0 +1,9 @@
+{
+  "avg_softirq_pct": 0.0,
+  "avg_sys_pct": 0.0,
+  "avg_user_pct": 0.0,
+  "avg_idle_pct": 0.0,
+  "ipc": 0.0,
+  "cycles_per_packet": 0.0,
+  "mpps_per_core": 0.0
+}

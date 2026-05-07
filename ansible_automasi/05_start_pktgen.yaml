@@ -1,0 +1,330 @@
+---
+- name: Start pktgen on sender nodes
+  hosts: targets
+  become: true
+
+  vars:
+    pktgen_bin: /home/telmat/pktgen-dpdk/builddir/app/pktgen
+    pktgen_session: pktgen
+    pktgen_args:
+      "10.90.1.1": "-- -T -m [1-3:4-6].0 -m [7-9:10-12].1"
+      "10.90.1.4": "-- -T -m [1-3:4-6].0"
+      "10.90.1.5": "-- -T -m [1-3:4-6].0"
+    bind_script: /home/telmat/scripts/bind-to-kernel.sh
+    pci_devices:
+      - "0000:01:00.0"
+      - "0000:01:00.1"
+
+
+  tasks:
+    # --- Load pkt_file config from dashboard ---
+    - name: Load pktgen config from dashboard
+      ansible.builtin.include_vars:
+        file: /home/telmat/final_t40/dashboard/pktgen_config.json
+        name: pktgen_cfg
+      run_once: true
+      delegate_to: localhost
+      become: false
+
+    # --- Ensure clean state before starting ---
+    - name: Force-kill any existing pktgen processes
+      ansible.builtin.shell: pkill -9 pktgen || true
+      failed_when: false
+      when: inventory_hostname in ["10.90.1.1", "10.90.1.4", "10.90.1.5"]
+
+    - name: Clean up stale getstats sentinel on pktgen nodes
+      ansible.builtin.file:
+        path: /tmp/stop_getstats
+        state: absent
+      when: inventory_hostname in ["10.90.1.1", "10.90.1.4", "10.90.1.5"]
+
+    - name: Remove stale pktgen stats log before new run
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /tmp/pktgen_stats.log
+        - /tmp/pktgen_latency.log
+      when: inventory_hostname in ["10.90.1.1", "10.90.1.4", "10.90.1.5"]
+
+    # --- Launch pktgen ---
+    - name: Kill existing pktgen tmux session if present
+      ansible.builtin.shell: tmux kill-session -t {{ pktgen_session }}
+      failed_when: false
+      when: inventory_hostname in pktgen_args
+
+    - name: Launch pktgen in detached tmux session (with pkt script)
+      ansible.builtin.shell: >
+        tmux new-session -d -s {{ pktgen_session }}
+        '{{ pktgen_bin }} {{ pktgen_args[inventory_hostname] }}
+        -f {{ pktgen_cfg[inventory_hostname] }}'
+      when: inventory_hostname in pktgen_args and inventory_hostname in pktgen_cfg
+
+    - name: Launch pktgen in detached tmux session (receiver, no pkt script)
+      ansible.builtin.shell: >
+        tmux new-session -d -s {{ pktgen_session }}
+        '{{ pktgen_bin }} {{ pktgen_args[inventory_hostname] }}'
+      when: inventory_hostname in pktgen_args and inventory_hostname not in pktgen_cfg
+
+    - name: Clean up stale signal files
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /tmp/ansible_pktgen_start
+        - /tmp/ansible_pktgen_stop
+      run_once: true
+      delegate_to: localhost
+      become: false
+
+    - name: Wait for pktgen to initialize
+      ansible.builtin.command: sleep 5
+      run_once: true
+      delegate_to: localhost
+      become: false
+
+    # --- Start traffic ---
+    - name: Signal dashboard - waiting for start
+      ansible.builtin.debug:
+        msg: "DASHBOARD_SIGNAL: waiting_for_start"
+      run_once: true
+
+    - name: Wait for start signal from dashboard
+      ansible.builtin.wait_for:
+        path: /tmp/ansible_pktgen_start
+        timeout: 3600
+      run_once: true
+      delegate_to: localhost
+      become: false
+
+    - name: Remove start signal file
+      ansible.builtin.file:
+        path: /tmp/ansible_pktgen_start
+        state: absent
+      run_once: true
+      delegate_to: localhost
+      become: false
+
+    - name: Check tmux session is active before start
+      ansible.builtin.shell: tmux list-sessions 2>&1
+      register: tmux_sessions_before_start
+      when: inventory_hostname in pktgen_args
+      failed_when: false
+
+    - name: Show tmux sessions before start
+      ansible.builtin.debug:
+        msg: "{{ tmux_sessions_before_start.stdout_lines | default([]) }}"
+      when: inventory_hostname in pktgen_args
+
+    - name: Capture pktgen screen before start
+      ansible.builtin.shell: tmux capture-pane -pt {{ pktgen_session }} 2>&1
+      register: pktgen_screen_before
+      when: inventory_hostname in pktgen_args
+      failed_when: false
+
+    - name: Show pktgen screen before start
+      ansible.builtin.debug:
+        msg: "{{ pktgen_screen_before.stdout_lines | default([]) }}"
+      when: inventory_hostname in pktgen_args
+
+    - name: Start traffic (start 0)
+      ansible.builtin.shell: tmux send-keys -t {{ pktgen_session }} "start 0" Enter
+      when: inventory_hostname in pktgen_args and inventory_hostname in pktgen_cfg
+
+    - name: Load stats collection on Node 4 (sender)
+      ansible.builtin.shell: tmux send-keys -t {{ pktgen_session }} "load /home/telmat/scripts/getstats.lua" Enter
+      when: inventory_hostname == "10.90.1.4"
+
+    - name: Load stats collection on Node 1 (sender + receiver ports)
+      ansible.builtin.shell: tmux send-keys -t {{ pktgen_session }} "load /home/telmat/scripts/getstats.lua" Enter
+      when: inventory_hostname == "10.90.1.1"
+
+    - name: Load stats collection on Node 5 (receiver)
+      ansible.builtin.shell: tmux send-keys -t {{ pktgen_session }} "load /home/telmat/scripts/getstats.lua" Enter
+      when: inventory_hostname == "10.90.1.5"
+
+    # Enable latency sampling on sender and receiver (uses ~1% of packet payloads for timestamps)
+    - name: Enable latency measurement on Node 4 (sender)
+      ansible.builtin.shell: tmux send-keys -t {{ pktgen_session }} "enable latency 0" Enter
+      when: inventory_hostname == "10.90.1.4"
+
+    - name: Enable latency measurement on Node 5 (receiver)
+      ansible.builtin.shell: tmux send-keys -t {{ pktgen_session }} "enable latency 0" Enter
+      when: inventory_hostname == "10.90.1.5"
+
+    # Start CPU metrics collection on Node 6 (router under test)
+    - name: Start CPU metrics collection on Node 6 (mpstat)
+      ansible.builtin.shell: >
+        mpstat -P ALL 1 3600 > /tmp/cpu_mpstat.log 2>&1 &
+        echo $! > /tmp/mpstat.pid
+      when: inventory_hostname == "10.90.1.6"
+
+    - name: Start CPU metrics collection on Node 6 (perf stat)
+      ansible.builtin.shell: >
+        perf stat -e cycles,instructions,LLC-load-misses -a
+        -o /tmp/cpu_perf.log -- sleep 3600 &
+        echo $! > /tmp/perf.pid
+      when: inventory_hostname == "10.90.1.6"
+
+    - name: Wait 2 seconds after start command
+      ansible.builtin.command: sleep 2
+      run_once: true
+      delegate_to: localhost
+      become: false
+
+    - name: Capture pktgen screen after start
+      ansible.builtin.shell: tmux capture-pane -pt {{ pktgen_session }} 2>&1
+      register: pktgen_screen_after
+      when: inventory_hostname in pktgen_args
+      failed_when: false
+
+    - name: Show pktgen screen after start
+      ansible.builtin.debug:
+        msg: "{{ pktgen_screen_after.stdout_lines | default([]) }}"
+      when: inventory_hostname in pktgen_args
+
+    # --- Stop traffic ---
+    - name: Signal dashboard - waiting for stop
+      ansible.builtin.debug:
+        msg: "DASHBOARD_SIGNAL: waiting_for_stop"
+      run_once: true
+
+    - name: Wait for stop signal from dashboard
+      ansible.builtin.wait_for:
+        path: /tmp/ansible_pktgen_stop
+        timeout: 3600
+      run_once: true
+      delegate_to: localhost
+      become: false
+
+    - name: Remove stop signal file
+      ansible.builtin.file:
+        path: /tmp/ansible_pktgen_stop
+        state: absent
+      run_once: true
+      delegate_to: localhost
+      become: false
+
+    - name: Stop traffic (stop 0)
+      ansible.builtin.shell: tmux send-keys -t {{ pktgen_session }} "stop 0" Enter
+      when: inventory_hostname in pktgen_args and inventory_hostname in pktgen_cfg
+
+    # Stop CPU metrics collection on Node 6
+    - name: Stop CPU metrics collection on Node 6
+      ansible.builtin.shell: |
+        kill $(cat /tmp/mpstat.pid) 2>/dev/null || true
+        kill $(cat /tmp/perf.pid) 2>/dev/null || true
+        sleep 1
+      failed_when: false
+      when: inventory_hostname == "10.90.1.6"
+
+    # Collect latency stats from Node 5 before quitting
+    - name: Collect latency stats on Node 5 (receiver)
+      ansible.builtin.shell: tmux send-keys -t {{ pktgen_session }} "load /home/telmat/scripts/getlatency.lua" Enter
+      when: inventory_hostname == "10.90.1.5"
+
+    - name: Wait for latency stats to write
+      ansible.builtin.command: sleep 2
+      run_once: true
+      delegate_to: localhost
+      become: false
+
+    - name: Quit pktgen
+      ansible.builtin.shell: tmux send-keys -t {{ pktgen_session }} "quit" Enter
+      when: inventory_hostname in pktgen_args
+
+    # --- Collect experiment results ---
+    - name: Wait for final stats writes
+      ansible.builtin.command: sleep 5
+      run_once: true
+      delegate_to: localhost
+      become: false
+
+    - name: Freeze experiment timestamp
+      ansible.builtin.set_fact:
+        experiment_ts: "{{ lookup('pipe', 'date +%Y%m%d_%H%M%S') }}"
+      run_once: true
+      delegate_to: localhost
+      become: false
+
+    - name: Create experiment results directory
+      ansible.builtin.file:
+        path: /home/telmat/final_t40/results/pktgen_stats_{{ experiment_ts }}
+        state: directory
+        mode: "0755"
+      run_once: true
+      delegate_to: localhost
+      become: false
+
+    - name: Fetch stats from Node 1
+      ansible.builtin.fetch:
+        src: /tmp/pktgen_stats.log
+        dest: /home/telmat/final_t40/results/pktgen_stats_{{ experiment_ts }}/node1.csv
+        flat: true
+      when: inventory_hostname == "10.90.1.1"
+
+    - name: Fetch stats from Node 4
+      ansible.builtin.fetch:
+        src: /tmp/pktgen_stats.log
+        dest: /home/telmat/final_t40/results/pktgen_stats_{{ experiment_ts }}/node4.csv
+        flat: true
+      when: inventory_hostname == "10.90.1.4"
+
+    - name: Fetch stats from Node 5
+      ansible.builtin.fetch:
+        src: /tmp/pktgen_stats.log
+        dest: /home/telmat/final_t40/results/pktgen_stats_{{ experiment_ts }}/node5.csv
+        flat: true
+      when: inventory_hostname == "10.90.1.5"
+
+    - name: Fetch latency stats from Node 5
+      ansible.builtin.fetch:
+        src: /tmp/pktgen_latency.log
+        dest: /home/telmat/final_t40/results/pktgen_stats_{{ experiment_ts }}/node5_latency.log
+        flat: true
+      failed_when: false
+      when: inventory_hostname == "10.90.1.5"
+
+    - name: Fetch CPU mpstat from Node 6
+      ansible.builtin.fetch:
+        src: /tmp/cpu_mpstat.log
+        dest: /home/telmat/final_t40/results/pktgen_stats_{{ experiment_ts }}/node6_mpstat.log
+        flat: true
+      failed_when: false
+      when: inventory_hostname == "10.90.1.6"
+
+    - name: Fetch CPU perf from Node 6
+      ansible.builtin.fetch:
+        src: /tmp/cpu_perf.log
+        dest: /home/telmat/final_t40/results/pktgen_stats_{{ experiment_ts }}/node6_perf.log
+        flat: true
+      failed_when: false
+      when: inventory_hostname == "10.90.1.6"
+
+    - name: Save pkt scripts used in this experiment
+      ansible.builtin.copy:
+        src: "{{ item }}"
+        dest: /home/telmat/final_t40/results/pktgen_stats_{{ experiment_ts }}/
+        mode: "0644"
+      loop:
+        - /home/telmat/final_t40/dashboard/pkt_files/node1_send.pkt
+        - /home/telmat/final_t40/dashboard/pkt_files/node4_send.pkt
+      run_once: true
+      delegate_to: localhost
+      become: false
+
+    # --- Ensure all traffic is stopped after experiment ---
+    - name: Force-kill pktgen processes after experiment
+      ansible.builtin.shell: pkill -9 pktgen || true
+      failed_when: false
+      when: inventory_hostname in ["10.90.1.1", "10.90.1.4", "10.90.1.5"]
+
+    - name: Kill existing VPP process
+      ansible.builtin.shell: systemctl stop vpp
+      delegate_to: localhost
+      when: inventory_hostname in ["10.90.1.6"]
+
+    - name: Bind NICs to kernel driver
+      ansible.builtin.shell: "bash {{ bind_script }} {{ item }}"
+      loop: "{{ pci_devices }}"
+

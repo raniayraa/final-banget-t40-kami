@@ -1,5 +1,6 @@
 import asyncio
 import json
+import re
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -178,7 +179,8 @@ def list_results():
     if not RESULTS_DIR.exists():
         return []
     dirs = sorted(
-        [d for d in RESULTS_DIR.iterdir() if d.is_dir() and d.name.startswith("pktgen_stats_")],
+        [d for d in RESULTS_DIR.iterdir()
+         if d.is_dir() and (d.name.startswith("pktgen_stats_") or (d / "node1.csv").exists())],
         key=lambda d: d.stat().st_mtime,
         reverse=True,
     )
@@ -284,6 +286,12 @@ def get_latency(exp_name: str):
     raise HTTPException(status_code=404, detail="Latency data not available")
 
 
+def _slugify(name: str) -> str:
+    slug = re.sub(r"[^\w\-.]", "_", name.strip())
+    slug = re.sub(r"_+", "_", slug).strip("_")
+    return slug[:100] or "experiment"
+
+
 @app.put("/api/results/{exp_name}/rename")
 def rename_experiment(exp_name: str, body: RenameRequest):
     if ".." in exp_name or "/" in exp_name:
@@ -294,8 +302,27 @@ def rename_experiment(exp_name: str, body: RenameRequest):
     display_name = body.display_name.strip()
     if not display_name:
         raise HTTPException(status_code=422, detail="display_name must not be empty")
-    (exp_dir / "meta.json").write_text(json.dumps({"display_name": display_name}, indent=2))
-    return {"ok": True, "display_name": display_name}
+
+    new_dir_name = _slugify(display_name)
+    new_dir = RESULTS_DIR / new_dir_name
+    if new_dir != exp_dir and new_dir.exists():
+        raise HTTPException(status_code=409, detail=f"A folder named '{new_dir_name}' already exists")
+
+    # Preserve existing description before renaming
+    meta: dict = {}
+    meta_path = exp_dir / "meta.json"
+    if meta_path.exists():
+        try:
+            meta = json.loads(meta_path.read_text())
+        except Exception:
+            pass
+    meta["display_name"] = display_name
+
+    if new_dir != exp_dir:
+        exp_dir.rename(new_dir)
+
+    (new_dir / "meta.json").write_text(json.dumps(meta, indent=2))
+    return {"ok": True, "display_name": display_name, "new_name": new_dir_name}
 
 
 @app.get("/api/results/{exp_name}/{node_file}")
@@ -335,7 +362,7 @@ async def ws_job(job_id: str, websocket: WebSocket):
             # Keep connection alive; all messages come via manager.broadcast
             await asyncio.sleep(30)
             await websocket.send_json({"type": "ping"})
-    except WebSocketDisconnect:
+    except (WebSocketDisconnect, RuntimeError):
         pass
     finally:
         await manager.unsubscribe(job_id, websocket)

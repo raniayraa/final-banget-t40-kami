@@ -1,0 +1,19 @@
+---
+- name: Prepare Node 6 for VPP — stop VPP service and bind NICs to DPDK
+  hosts: 10.90.1.6
+  become: true
+
+  vars:
+    bind_script: /home/telmat/scripts/bind-to-DPDK.sh
+    pci_devices:
+      - "0000:01:00.0"
+      - "0000:01:00.1"
+
+  tasks:
+    - name: Stop VPP service if running
+      ansible.builtin.shell: systemctl stop vpp
+      failed_when: false
+
+    - name: Bind NICs to DPDK
+      ansible.builtin.shell: "bash {{ bind_script }} {{ item }}"
+      loop: "{{ pci_devices }}"

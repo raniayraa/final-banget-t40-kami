@@ -1,0 +1,10 @@
+stop 0
+set 0 dst mac 64:9d:99:ff:f5:7a
+set 0 dst ip 192.168.12.1
+set 0 src ip 192.168.12.2/24
+set 0 size 64
+start 0
+#load /home/telmat/scripts/getstats.lua
+#delay 10000
+#stop 0
+#exit

@@ -1,0 +1,8 @@
+[19:08:33] Starting 30 experiments: modes=['vpp', 'xdp', 'kernel'], ports=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10], directions=['41']
+[19:08:33] 
+============================================================
+[19:08:33] MODE: VPP
+[19:08:33] ============================================================
+[19:08:33] [VPP] Running pre-bind: 00_node6_bind_dpdk.yaml
+[19:08:33]   ansible-playbook 00_node6_bind_dpdk.yaml
+ERROR! the playbook: 00_node6_bind_dpdk.yaml could not be found

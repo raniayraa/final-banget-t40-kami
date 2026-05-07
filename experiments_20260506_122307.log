@@ -1,0 +1,46 @@
+[12:23:07] Starting 60 experiments: modes=['vpp', 'xdp', 'kernel'], ports=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10], directions=['41', '15_41']
+[12:23:07] 
+============================================================
+[12:23:07] MODE: VPP
+[12:23:07] ============================================================
+[12:23:07] [VPP] Running pre-bind: 00_node6_bind_dpdk.yaml
+[12:23:07]   ansible-playbook 00_node6_bind_dpdk.yaml
+
+PLAY [Prepare Node 6 for VPP — stop VPP service and bind NICs to DPDK] *********
+
+TASK [Gathering Facts] *********************************************************
+ok: [10.90.1.6]
+
+TASK [Stop VPP service if running] *********************************************
+changed: [10.90.1.6]
+
+TASK [Bind NICs to DPDK] *******************************************************
+changed: [10.90.1.6] => (item=0000:01:00.0)
+changed: [10.90.1.6] => (item=0000:01:00.1)
+
+PLAY RECAP *********************************************************************
+10.90.1.6                  : ok=3    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+
+[12:23:10] --- Run 1/60 ---
+[12:23:10] === START: VPP_1_Port_No_Block_41 ===
+[12:23:10]   Patching pkt files → port max = 1024
+[12:23:10]   Writing pktgen_config.json → active nodes: ['10.90.1.4']
+[12:23:10]   ansible-playbook 00_check_node_connection.yaml
+
+PLAY [Basic Setup - SSH and Connectivity Check] ********************************
+
+TASK [Log successful SSH connection] *******************************************
+ok: [10.90.1.1] => {
+    "msg": "Successfully connected via SSH to 10.90.1.1"
+}
+ok: [10.90.1.4] => {
+    "msg": "Successfully connected via SSH to 10.90.1.4"
+}
+ok: [10.90.1.6] => {
+    "msg": "Successfully connected via SSH to 10.90.1.6"
+}
+ok: [10.90.1.5] => {
+    "msg": "Successfully connected via SSH to 10.90.1.5"
+}
+
+TASK [Ping 8.8.8.8] ************************************************************

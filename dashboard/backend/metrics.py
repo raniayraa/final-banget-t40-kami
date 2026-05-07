@@ -128,7 +128,9 @@ def compute_metrics(exp_dir: Path) -> dict:
             loss_series.append(max(0.0, (tx - rx) / tx * 100))
             efficiency_series.append(min(100.0, rx / tx * 100))
 
-    gbps_series = [b * 8 / 1e9 for b in rx_byte_deltas]
+    # Add 24 bytes/pkt of Ethernet overhead excluded from DPDK ibytes:
+    # preamble+SFD (8) + IFG (12) + CRC stripped by NIC (4) = 24
+    gbps_series = [(b + n * 24) * 8 / 1e9 for b, n in zip(rx_byte_deltas, rx_pkt_deltas)]
 
     return {
         "peak_forwarded_pps": _p95(list(map(float, rx_pkt_deltas))),

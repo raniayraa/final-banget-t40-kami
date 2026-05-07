@@ -37,10 +37,12 @@ function buildChartData(rows: CsvRow[], port: string, pktMetric: string, byteMet
     const curr = byTime.get(times[i])!
     const pktDelta = Math.max(0, (curr[pktMetric] ?? 0) - (prev[pktMetric] ?? 0))
     const byteDelta = Math.max(0, (curr[byteMetric] ?? 0) - (prev[byteMetric] ?? 0))
+    // Add 24 bytes/pkt of Ethernet overhead excluded from DPDK ibytes/obytes:
+    // preamble+SFD (8) + IFG (12) + CRC stripped by NIC (4) = 24
     result.push({
       time: times[i].slice(11, 19),
       pps: pktDelta,
-      mbps: Math.round((byteDelta * 8) / 1_000_000),
+      mbps: Math.round(((byteDelta + pktDelta * 24) * 8) / 1_000_000),
     })
   }
   return result
@@ -552,9 +554,10 @@ export function Results() {
     if (!renameValue.trim()) return
     setRenameLoading(true)
     try {
-      await api.renameExperiment(expName, renameValue.trim())
+      const res = await api.renameExperiment(expName, renameValue.trim())
       const updated = await api.listResults()
       setExperiments(updated)
+      if (selected === expName) setSelected(res.new_name)
     } catch {
       // silently ignore
     } finally {

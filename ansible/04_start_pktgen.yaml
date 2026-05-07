@@ -33,6 +33,15 @@
       failed_when: false
       when: inventory_hostname in pktgen_args
 
+    - name: Remove stale pktgen stats log before new run
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /tmp/pktgen_stats.log
+        - /tmp/pktgen_latency.log
+      when: inventory_hostname in ["10.90.1.1", "10.90.1.4", "10.90.1.5"]
+
     - name: Launch pktgen in detached tmux session (with pkt script)
       ansible.builtin.shell: >
         tmux new-session -d -s {{ pktgen_session }}

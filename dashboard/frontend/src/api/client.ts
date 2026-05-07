@@ -141,7 +141,7 @@ export const api = {
   getResultCsv: (exp: string, file: string) => get<NodeCsvData>(`/results/${exp}/${file}`),
   getResultPkt: (exp: string, file: string) => get<PktFileData>(`/results/${exp}/${file}`),
   renameExperiment: (exp: string, displayName: string) =>
-    put<{ ok: boolean; display_name: string }>(`/results/${exp}/rename`, { display_name: displayName }),
+    put<{ ok: boolean; display_name: string; new_name: string }>(`/results/${exp}/rename`, { display_name: displayName }),
   updateDescription: (exp: string, description: string) =>
     put<{ ok: boolean }>(`/results/${exp}/description`, { description }),
   getMetrics: (exp: string) => get<MetricsSummary>(`/results/${exp}/metrics`),
