@@ -39,10 +39,16 @@ PKT_NODES = ["node1_send.pkt", "node4_send.pkt"]
 
 FORWARDERS = ["vpp", "xdp", "kernel"]
 
-FORWARDER_PLAYBOOK = {
+FORWARDER_BIND_PLAYBOOK = {
+    "vpp":    "00_node6_bind_dpdk.yaml",
+    "xdp":    "00_node6_bind_kernel.yaml",
+    "kernel": "00_node6_bind_kernel.yaml",
+}
+
+FORWARDER_SETUP_PLAYBOOK = {
     "vpp":    "05_setup_vpp_node6.yaml",
-    "xdp":    "05_setup_xdp_node6.yaml",
-    "kernel": "05_setup_kernel_node6.yaml",
+    "xdp":    "04_setup_xdp_node6.yaml",
+    "kernel": "04_setup_kernel_node6.yaml",
 }
 
 FORWARDER_LABEL = {
@@ -66,7 +72,7 @@ VALID_DIRECTIONS = {"41", "15", "15_41"}
 # Multi-route XDP support
 # ---------------------------------------------------------------------------
 
-XDP_API_BASE  = "http://localhost:9898/api"
+XDP_API_BASE  = "http://localhost:8080/api"
 XDP_IFACE_IN  = "enp1s0f1np1"
 XDP_IFACE_OUT = "enp1s0f0np0"
 XDP_SRC_MAC   = "64:9d:99:ff:f5:9a"   # Node 6 egress NIC — same for every route
@@ -226,6 +232,7 @@ def render_xdp_multiroute_playbook(routes: list[dict]) -> str:
 # ---------------------------------------------------------------------------
 
 SETUP_PLAYBOOKS = [
+    "00_node6_bind_kernel.yaml",
     "01_basic_setup.yaml",
     "02_setup_route.yaml",
     "03_setup_scripts.yaml",
@@ -408,12 +415,12 @@ def run_experiment(
     if not dry_run:
         print("OK")
 
-    print(f"  [3/5] Running setup playbooks ...")
-    for pb in SETUP_PLAYBOOKS:
-        ok = run_playbook(pb, ansible_dir, inventory, pb, dry_run)
-        if not ok:
-            print(f"  ERROR: {pb} failed — skipping this experiment.")
-            return False, False
+    print(f"  [3/5] Binding Node 6 NICs ({forwarder}) ...")
+    ok = run_playbook(FORWARDER_BIND_PLAYBOOK[forwarder], ansible_dir, inventory,
+                      FORWARDER_BIND_PLAYBOOK[forwarder], dry_run)
+    if not ok:
+        print(f"  ERROR: NIC binding failed — skipping this experiment.")
+        return False, False
 
     print(f"  [4/5] Running forwarder setup ({forwarder}) ...")
     if forwarder == "xdp" and route_count is not None:
@@ -427,7 +434,7 @@ def run_experiment(
             print(f"    Generated {pb_path.name} ({route_count} entries)")
         forwarder_pb = MULTIROUTE_PLAYBOOK
     else:
-        forwarder_pb = FORWARDER_PLAYBOOK[forwarder]
+        forwarder_pb = FORWARDER_SETUP_PLAYBOOK[forwarder]
     ok = run_playbook(forwarder_pb, ansible_dir, inventory, forwarder_pb, dry_run)
     if not ok:
         print(f"  ERROR: forwarder setup failed — skipping this experiment.")
@@ -442,7 +449,7 @@ def run_experiment(
         else FORWARDER_LABEL[forwarder]
     )
     if dry_run:
-        print(f"    [dry-run] would: launch 04_start_pktgen.yaml, wait {setup_wait}s,")
+        print(f"    [dry-run] would: launch ansible_automasi/05_start_pktgen.yaml, wait {setup_wait}s,")
         print(f"              touch start signal, wait {duration}s, touch stop signal,")
         print(f"              wait for ansible, rename result dir to "
               f"{fw_label}_{port_label}_Port_No_Block_{direction}")
@@ -457,7 +464,7 @@ def run_experiment(
     SIGNAL_STOP.unlink(missing_ok=True)
 
     cmd = ["ansible-playbook", "-i", inventory,
-           str(ansible_dir / "04_start_pktgen.yaml")]
+           str(ansible_dir / "05_start_pktgen.yaml")]
     proc = subprocess.Popen(cmd)
 
     # Wait for pktgen to initialize (playbook sleeps 5s internally)
@@ -476,7 +483,7 @@ def run_experiment(
     print(f"done (exit {proc.returncode})")
 
     if proc.returncode != 0:
-        print("  WARNING: 04_start_pktgen.yaml exited non-zero — results may be incomplete.")
+        print("  WARNING: 05_start_pktgen.yaml exited non-zero — results may be incomplete.")
 
     # Find and rename new result directory
     result_dir = None
@@ -594,6 +601,13 @@ def main() -> None:
     print(f"  Setup wait:  {args.setup_wait}s")
     if args.dry_run:
         print("  [DRY RUN — no changes will be made]")
+
+    print(f"\nRunning setup playbooks once (01–03) ...")
+    for pb in SETUP_PLAYBOOKS:
+        ok = run_playbook(pb, ansible_dir, args.inventory, pb, args.dry_run)
+        if not ok:
+            print(f"ERROR: {pb} failed — aborting sweep.")
+            sys.exit(1)
 
     failed = []
     data_warnings = []

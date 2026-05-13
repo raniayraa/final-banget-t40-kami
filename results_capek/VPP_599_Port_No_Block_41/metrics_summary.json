@@ -1,0 +1,10 @@
+{
+  "peak_forwarded_pps": 10843279.0,
+  "peak_forwarded_gbps": 7.2866681280000005,
+  "sender_injection_pps": 37203164.52173913,
+  "packet_loss_pct": 69.82439853727179,
+  "nic_drop_rate_mean": 0.0,
+  "nic_drop_rate_peak": 0.0,
+  "forwarding_efficiency_pct": 30.17560146272821,
+  "throughput_std_dev": 2220498.300355996
+}

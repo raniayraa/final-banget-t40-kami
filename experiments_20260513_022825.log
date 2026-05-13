@@ -1,0 +1,19 @@
+
+Experiment sweep: 1 range(s) × 1 forwarder(s) × 3 direction(s) = 3 runs
+  Port ranges: ['650-660']
+  Forwarders:  ['xdp']
+  Directions:  ['41', '15', '15_41']
+  Duration:    15s per run
+  Setup wait:  10s
+
+Running setup playbooks once (01–03) ...
+    Running 00_node6_bind_kernel.yaml ... 
+PLAY [Prepare Node 6 for XDP/Kernel — stop VPP service and bind NICs to kernel driver] ***
+
+TASK [Gathering Facts] *********************************************************
+ok: [10.90.1.6]
+
+TASK [Stop XDP forwarder before rebinding to kernel] ***************************
+ok: [10.90.1.6 -> localhost]
+
+TASK [Stop VPP service if running] *********************************************

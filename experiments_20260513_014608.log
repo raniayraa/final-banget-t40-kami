@@ -1,0 +1,95 @@
+
+Experiment sweep: 1 range(s) × 1 forwarder(s) × 1 direction(s) = 1 runs
+  Port ranges: ['700']
+  Forwarders:  ['vpp']
+  Directions:  ['41']
+  Duration:    15s per run
+  Setup wait:  10s
+
+Running setup playbooks once (01–03) ...
+    Running 00_node6_bind_kernel.yaml ... [WARNING]: Unable to parse /home/telmat/final_t40/ansibleinventory.ini as an
+inventory source
+[WARNING]: No inventory was parsed, only implicit localhost is available
+[WARNING]: provided hosts list is empty, only localhost is available. Note that
+the implicit localhost does not match 'all'
+[WARNING]: Could not match supplied host pattern, ignoring: 10.90.1.6
+
+PLAY [Prepare Node 6 for XDP/Kernel — stop VPP service and bind NICs to kernel driver] ***
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+
+OK
+    Running 01_basic_setup.yaml ... [WARNING]: Unable to parse /home/telmat/final_t40/ansibleinventory.ini as an
+inventory source
+[WARNING]: No inventory was parsed, only implicit localhost is available
+[WARNING]: provided hosts list is empty, only localhost is available. Note that
+the implicit localhost does not match 'all'
+[WARNING]: Could not match supplied host pattern, ignoring: targets
+
+PLAY [Basic network interface setup] *******************************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+
+OK
+    Running 02_setup_route.yaml ... [WARNING]: Unable to parse /home/telmat/final_t40/ansibleinventory.ini as an
+inventory source
+[WARNING]: No inventory was parsed, only implicit localhost is available
+[WARNING]: provided hosts list is empty, only localhost is available. Note that
+the implicit localhost does not match 'all'
+[WARNING]: Could not match supplied host pattern, ignoring: targets
+
+PLAY [Setup static routes and IP forwarding] ***********************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+
+OK
+    Running 03_setup_scripts.yaml ... [WARNING]: Unable to parse /home/telmat/final_t40/ansibleinventory.ini as an
+inventory source
+[WARNING]: No inventory was parsed, only implicit localhost is available
+[WARNING]: provided hosts list is empty, only localhost is available. Note that
+the implicit localhost does not match 'all'
+[WARNING]: Could not match supplied host pattern, ignoring: targets
+
+PLAY [Deploy pktgen send scripts to sender nodes] ******************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+
+OK
+
+════════════════════════════════════════════════════════════
+[1/1] VPP | Ports 700 | Direction: 41
+════════════════════════════════════════════════════════════
+
+  [1/5] Modifying pkt files ... OK
+  [2/5] Updating pktgen_config.json ... OK
+  [3/5] Binding Node 6 NICs (vpp) ...
+    Running 00_node6_bind_dpdk.yaml ... [WARNING]: Unable to parse /home/telmat/final_t40/ansibleinventory.ini as an
+inventory source
+[WARNING]: No inventory was parsed, only implicit localhost is available
+[WARNING]: provided hosts list is empty, only localhost is available. Note that
+the implicit localhost does not match 'all'
+[WARNING]: Could not match supplied host pattern, ignoring: 10.90.1.6
+
+PLAY [Prepare Node 6 for VPP — stop VPP service and bind NICs to DPDK] *********
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+
+OK
+  [4/5] Running forwarder setup (vpp) ...
+    Running 05_setup_vpp_node6.yaml ... ERROR! the playbook: ansible/05_setup_vpp_node6.yaml could not be found
+FAILED (exit 1)
+  ERROR: forwarder setup failed — skipping this experiment.
+
+════════════════════════════════════════════════════════════
+Sweep complete: 0/1 ansible runs succeeded.
+
+Failed (ansible error):
+  VPP_700_Port_No_Block_41
+
+Degraded results (node5.csv empty — forwarder may not have reached Node 5):
+  VPP_700_Port_No_Block_41

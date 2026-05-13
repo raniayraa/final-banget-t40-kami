@@ -25,7 +25,7 @@ SETUP_PLAYBOOKS = [
     "02_setup_route.yaml",
     "03_setup_scripts.yaml",
 ]
-PKTGEN_PLAYBOOK = "04_start_pktgen.yaml"
+PKTGEN_PLAYBOOK = "05_start_pktgen.yaml"
 
 START_SIGNAL = Path("/tmp/ansible_pktgen_start")
 STOP_SIGNAL = Path("/tmp/ansible_pktgen_stop")
@@ -38,15 +38,9 @@ TRAFFIC_VARIANTS = [
 ]
 
 MODE_CONFIG = {
-    "vpp":    {"prebind": "00_node6_bind_dpdk.yaml",
-               "setup05": "05_setup_vpp_node6.yaml",
-               "prefix":  "VPP"},
-    "xdp":    {"prebind": "00_node6_bind_kernel.yaml",
-               "setup05": "05_setup_xdp_node6.yaml",
-               "prefix":  "XDP"},
-    "kernel": {"prebind": "00_node6_bind_kernel.yaml",
-               "setup05": "05_setup_kernel_node6.yaml",
-               "prefix":  "Kernel"},
+    "vpp":    {"setup04": "04_setup_vpp_node6.yaml",    "prefix": "VPP"},
+    "xdp":    {"setup04": "04_setup_xdp_node6.yaml",    "prefix": "XDP"},
+    "kernel": {"setup04": "04_setup_kernel_node6.yaml", "prefix": "Kernel"},
 }
 
 
@@ -55,15 +49,22 @@ def log(msg: str) -> None:
     print(f"[{ts}] {msg}", flush=True)
 
 
+DST_PORT_OFFSET = 4409  # keeps dst ports in a different range from src for RSS diversity
+
 def update_pkt_files(num_ports: int) -> None:
-    max_port = 1023 + num_ports
+    src_start = 1024
+    src_max   = 1023 + num_ports
+    dst_start = src_start + DST_PORT_OFFSET
+    dst_max   = src_max   + DST_PORT_OFFSET
     for name in ("node1_send.pkt", "node4_send.pkt"):
         path = PKT_FILES_DIR / name
         content = path.read_text()
-        for direction in ("src", "dst"):
-            content = re.sub(rf"(range 0 {direction} port start\s+)\d+", rf"\g<1>1024", content)
-            content = re.sub(rf"(range 0 {direction} port min\s+)\d+",   rf"\g<1>1024", content)
-            content = re.sub(rf"(range 0 {direction} port max\s+)\d+",   rf"\g<1>{max_port}", content)
+        content = re.sub(r"(range 0 src port start\s+)\d+", rf"\g<1>{src_start}", content)
+        content = re.sub(r"(range 0 src port min\s+)\d+",   rf"\g<1>{src_start}", content)
+        content = re.sub(r"(range 0 src port max\s+)\d+",   rf"\g<1>{src_max}",   content)
+        content = re.sub(r"(range 0 dst port start\s+)\d+", rf"\g<1>{dst_start}", content)
+        content = re.sub(r"(range 0 dst port min\s+)\d+",   rf"\g<1>{dst_start}", content)
+        content = re.sub(r"(range 0 dst port max\s+)\d+",   rf"\g<1>{dst_max}",   content)
         path.write_text(content)
 
 
@@ -107,17 +108,11 @@ def rename_result(raw_name: str, prefix: str, num_ports: int, suffix: str) -> st
     return target_name
 
 
-def run_prebind(mode: str, dry_run: bool) -> None:
-    playbook = MODE_CONFIG[mode]["prebind"]
-    log(f"[{mode.upper()}] Running pre-bind: {playbook}")
-    run_playbook(playbook, dry_run, required=True)
-
-
 def run_experiment(mode: str, num_ports: int, suffix: str,
                    pktgen_cfg: dict, dry_run: bool,
                    duration: int = 15) -> None:
     prefix = MODE_CONFIG[mode]["prefix"]
-    setup05 = MODE_CONFIG[mode]["setup05"]
+    setup04 = MODE_CONFIG[mode]["setup04"]
     label = f"{prefix}_{num_ports}_Port_No_Block_{suffix}"
     log(f"=== START: {label} ===")
 
@@ -133,7 +128,7 @@ def run_experiment(mode: str, num_ports: int, suffix: str,
         run_playbook(pb, dry_run, required=False)
 
     # Run mode-specific node6 setup before pktgen
-    run_playbook(setup05, dry_run, required=True)
+    run_playbook(setup04, dry_run, required=True)
 
     # Snapshot results dir before pktgen run
     before = set(os.listdir(RESULTS_DIR))
@@ -228,8 +223,6 @@ def main() -> None:
         log(f"\n{'='*60}")
         log(f"MODE: {mode.upper()}")
         log(f"{'='*60}")
-
-        run_prebind(mode, args.dry_run)
 
         for suffix, pktgen_cfg in variants:
             for num_ports in port_counts:

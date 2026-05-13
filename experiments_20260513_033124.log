@@ -1,0 +1,1032 @@
+
+Experiment sweep: 1 range(s) × 1 forwarder(s) × 1 direction(s) = 1 runs
+  Port ranges: ['650-660']
+  Forwarders:  ['xdp']
+  Directions:  ['41']
+  Duration:    15s per run
+  Setup wait:  10s
+
+Running setup playbooks once (01–03) ...
+    Running 00_node6_bind_kernel.yaml ... 
+PLAY [Prepare Node 6 for XDP/Kernel — stop VPP service and bind NICs to kernel driver] ***
+
+TASK [Gathering Facts] *********************************************************
+ok: [10.90.1.6]
+
+TASK [Stop XDP forwarder before rebinding to kernel] ***************************
+ok: [10.90.1.6 -> localhost]
+
+TASK [Stop VPP service if running] *********************************************
+changed: [10.90.1.6]
+
+TASK [Bind NICs to kernel driver] **********************************************
+changed: [10.90.1.6] => (item=0000:01:00.0)
+changed: [10.90.1.6] => (item=0000:01:00.1)
+
+PLAY RECAP *********************************************************************
+10.90.1.6                  : ok=4    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+
+OK
+    Running 01_basic_setup.yaml ... 
+PLAY [Basic network interface setup] *******************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [10.90.1.6]
+ok: [10.90.1.5]
+ok: [10.90.1.4]
+ok: [10.90.1.1]
+
+TASK [Kill any existing pktgen process] ****************************************
+skipping: [10.90.1.6]
+changed: [10.90.1.4]
+changed: [10.90.1.5]
+changed: [10.90.1.1]
+
+TASK [Bind NICs to kernel driver] **********************************************
+skipping: [10.90.1.6]
+changed: [10.90.1.5]
+changed: [10.90.1.4]
+changed: [10.90.1.1]
+
+TASK [Bring up interface, flush addresses, disable RA] *************************
+changed: [10.90.1.6] => (item={'key': 'enp1s0f0np0', 'value': {'ipv4': '192.168.56.6/24', 'ipv6': 'fd00:56::6/64'}})
+changed: [10.90.1.4] => (item={'key': 'enp1s0f1np1', 'value': {'ipv4': '192.168.46.4/24', 'ipv6': 'fd00:46::4/64'}})
+changed: [10.90.1.5] => (item={'key': 'enp1s0f1np1', 'value': {'ipv4': '192.168.56.5/24', 'ipv6': 'fd00:56::5/64'}})
+changed: [10.90.1.1] => (item={'key': 'enp1s0f0np0', 'value': {'ipv4': '192.168.46.1/24', 'ipv6': 'fd00:46::1/64'}})
+changed: [10.90.1.6] => (item={'key': 'enp1s0f1np1', 'value': {'ipv4': '192.168.46.6/24', 'ipv6': 'fd00:46::6/64'}})
+changed: [10.90.1.1] => (item={'key': 'enp1s0f1np1', 'value': {'ipv4': '192.168.56.1/24', 'ipv6': 'fd00:56::1/64'}})
+
+TASK [Assign IPv4 address] *****************************************************
+changed: [10.90.1.6] => (item={'key': 'enp1s0f0np0', 'value': {'ipv4': '192.168.56.6/24', 'ipv6': 'fd00:56::6/64'}})
+changed: [10.90.1.1] => (item={'key': 'enp1s0f0np0', 'value': {'ipv4': '192.168.46.1/24', 'ipv6': 'fd00:46::1/64'}})
+changed: [10.90.1.4] => (item={'key': 'enp1s0f1np1', 'value': {'ipv4': '192.168.46.4/24', 'ipv6': 'fd00:46::4/64'}})
+changed: [10.90.1.5] => (item={'key': 'enp1s0f1np1', 'value': {'ipv4': '192.168.56.5/24', 'ipv6': 'fd00:56::5/64'}})
+changed: [10.90.1.6] => (item={'key': 'enp1s0f1np1', 'value': {'ipv4': '192.168.46.6/24', 'ipv6': 'fd00:46::6/64'}})
+changed: [10.90.1.1] => (item={'key': 'enp1s0f1np1', 'value': {'ipv4': '192.168.56.1/24', 'ipv6': 'fd00:56::1/64'}})
+
+TASK [Assign IPv6 address] *****************************************************
+changed: [10.90.1.6] => (item={'key': 'enp1s0f0np0', 'value': {'ipv4': '192.168.56.6/24', 'ipv6': 'fd00:56::6/64'}})
+changed: [10.90.1.5] => (item={'key': 'enp1s0f1np1', 'value': {'ipv4': '192.168.56.5/24', 'ipv6': 'fd00:56::5/64'}})
+changed: [10.90.1.4] => (item={'key': 'enp1s0f1np1', 'value': {'ipv4': '192.168.46.4/24', 'ipv6': 'fd00:46::4/64'}})
+changed: [10.90.1.1] => (item={'key': 'enp1s0f0np0', 'value': {'ipv4': '192.168.46.1/24', 'ipv6': 'fd00:46::1/64'}})
+changed: [10.90.1.6] => (item={'key': 'enp1s0f1np1', 'value': {'ipv4': '192.168.46.6/24', 'ipv6': 'fd00:46::6/64'}})
+changed: [10.90.1.1] => (item={'key': 'enp1s0f1np1', 'value': {'ipv4': '192.168.56.1/24', 'ipv6': 'fd00:56::1/64'}})
+
+TASK [Show interface addresses] ************************************************
+changed: [10.90.1.6] => (item={'key': 'enp1s0f0np0', 'value': {'ipv4': '192.168.56.6/24', 'ipv6': 'fd00:56::6/64'}})
+changed: [10.90.1.5] => (item={'key': 'enp1s0f1np1', 'value': {'ipv4': '192.168.56.5/24', 'ipv6': 'fd00:56::5/64'}})
+changed: [10.90.1.1] => (item={'key': 'enp1s0f0np0', 'value': {'ipv4': '192.168.46.1/24', 'ipv6': 'fd00:46::1/64'}})
+changed: [10.90.1.4] => (item={'key': 'enp1s0f1np1', 'value': {'ipv4': '192.168.46.4/24', 'ipv6': 'fd00:46::4/64'}})
+changed: [10.90.1.6] => (item={'key': 'enp1s0f1np1', 'value': {'ipv4': '192.168.46.6/24', 'ipv6': 'fd00:46::6/64'}})
+changed: [10.90.1.1] => (item={'key': 'enp1s0f1np1', 'value': {'ipv4': '192.168.56.1/24', 'ipv6': 'fd00:56::1/64'}})
+
+TASK [Print interface addresses] ***********************************************
+ok: [10.90.1.1] => (item={'changed': True, 'stdout': '1241: enp1s0f0np0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc mq state DOWN group default qlen 1000\n    link/ether 64:9d:99:ff:f5:7a brd ff:ff:ff:ff:ff:ff\n    inet 192.168.46.1/24 scope global enp1s0f0np0\n       valid_lft forever preferred_lft forever\n    inet6 fd00:46::1/64 scope global tentative \n       valid_lft forever preferred_lft forever', 'stderr': '', 'rc': 0, 'cmd': 'ip addr show dev enp1s0f0np0', 'start': '2026-05-13 03:31:35.167746', 'end': '2026-05-13 03:31:35.170349', 'delta': '0:00:00.002603', 'msg': '', 'invocation': {'module_args': {'_raw_params': 'ip addr show dev enp1s0f0np0', '_uses_shell': True, 'expand_argument_vars': True, 'stdin_add_newline': True, 'strip_empty_ends': True, 'argv': None, 'chdir': None, 'executable': None, 'creates': None, 'removes': None, 'stdin': None}}, 'stdout_lines': ['1241: enp1s0f0np0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc mq state DOWN group default qlen 1000', '    link/ether 64:9d:99:ff:f5:7a brd ff:ff:ff:ff:ff:ff', '    inet 192.168.46.1/24 scope global enp1s0f0np0', '       valid_lft forever preferred_lft forever', '    inet6 fd00:46::1/64 scope global tentative ', '       valid_lft forever preferred_lft forever'], 'stderr_lines': [], 'failed': False, 'item': {'key': 'enp1s0f0np0', 'value': {'ipv4': '192.168.46.1/24', 'ipv6': 'fd00:46::1/64'}}, 'ansible_loop_var': 'item'}) => {
+    "msg": [
+        "1241: enp1s0f0np0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc mq state DOWN group default qlen 1000",
+        "    link/ether 64:9d:99:ff:f5:7a brd ff:ff:ff:ff:ff:ff",
+        "    inet 192.168.46.1/24 scope global enp1s0f0np0",
+        "       valid_lft forever preferred_lft forever",
+        "    inet6 fd00:46::1/64 scope global tentative ",
+        "       valid_lft forever preferred_lft forever"
+    ]
+}
+ok: [10.90.1.4] => (item={'changed': True, 'stdout': '1237: enp1s0f1np1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP group default qlen 1000\n    link/ether 64:9d:99:ff:e7:af brd ff:ff:ff:ff:ff:ff\n    inet 192.168.46.4/24 scope global enp1s0f1np1\n       valid_lft forever preferred_lft forever\n    inet6 fd00:46::4/64 scope global tentative \n       valid_lft forever preferred_lft forever\n    inet6 fe80::6ee4:77fb:8f1d:f3fb/64 scope link noprefixroute \n       valid_lft forever preferred_lft forever', 'stderr': '', 'rc': 0, 'cmd': 'ip addr show dev enp1s0f1np1', 'start': '2026-05-13 03:31:35.173573', 'end': '2026-05-13 03:31:35.176425', 'delta': '0:00:00.002852', 'msg': '', 'invocation': {'module_args': {'_raw_params': 'ip addr show dev enp1s0f1np1', '_uses_shell': True, 'expand_argument_vars': True, 'stdin_add_newline': True, 'strip_empty_ends': True, 'argv': None, 'chdir': None, 'executable': None, 'creates': None, 'removes': None, 'stdin': None}}, 'stdout_lines': ['1237: enp1s0f1np1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP group default qlen 1000', '    link/ether 64:9d:99:ff:e7:af brd ff:ff:ff:ff:ff:ff', '    inet 192.168.46.4/24 scope global enp1s0f1np1', '       valid_lft forever preferred_lft forever', '    inet6 fd00:46::4/64 scope global tentative ', '       valid_lft forever preferred_lft forever', '    inet6 fe80::6ee4:77fb:8f1d:f3fb/64 scope link noprefixroute ', '       valid_lft forever preferred_lft forever'], 'stderr_lines': [], 'failed': False, 'item': {'key': 'enp1s0f1np1', 'value': {'ipv4': '192.168.46.4/24', 'ipv6': 'fd00:46::4/64'}}, 'ansible_loop_var': 'item'}) => {
+    "msg": [
+        "1237: enp1s0f1np1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP group default qlen 1000",
+        "    link/ether 64:9d:99:ff:e7:af brd ff:ff:ff:ff:ff:ff",
+        "    inet 192.168.46.4/24 scope global enp1s0f1np1",
+        "       valid_lft forever preferred_lft forever",
+        "    inet6 fd00:46::4/64 scope global tentative ",
+        "       valid_lft forever preferred_lft forever",
+        "    inet6 fe80::6ee4:77fb:8f1d:f3fb/64 scope link noprefixroute ",
+        "       valid_lft forever preferred_lft forever"
+    ]
+}
+ok: [10.90.1.1] => (item={'changed': True, 'stdout': '1240: enp1s0f1np1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP group default qlen 1000\n    link/ether 64:9d:99:ff:f5:7b brd ff:ff:ff:ff:ff:ff\n    inet 192.168.56.1/24 scope global enp1s0f1np1\n       valid_lft forever preferred_lft forever\n    inet6 fd00:56::1/64 scope global tentative \n       valid_lft forever preferred_lft forever\n    inet6 fe80::8e20:1868:65b9:3c1f/64 scope link tentative noprefixroute \n       valid_lft forever preferred_lft forever', 'stderr': '', 'rc': 0, 'cmd': 'ip addr show dev enp1s0f1np1', 'start': '2026-05-13 03:31:35.376361', 'end': '2026-05-13 03:31:35.379257', 'delta': '0:00:00.002896', 'msg': '', 'invocation': {'module_args': {'_raw_params': 'ip addr show dev enp1s0f1np1', '_uses_shell': True, 'expand_argument_vars': True, 'stdin_add_newline': True, 'strip_empty_ends': True, 'argv': None, 'chdir': None, 'executable': None, 'creates': None, 'removes': None, 'stdin': None}}, 'stdout_lines': ['1240: enp1s0f1np1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP group default qlen 1000', '    link/ether 64:9d:99:ff:f5:7b brd ff:ff:ff:ff:ff:ff', '    inet 192.168.56.1/24 scope global enp1s0f1np1', '       valid_lft forever preferred_lft forever', '    inet6 fd00:56::1/64 scope global tentative ', '       valid_lft forever preferred_lft forever', '    inet6 fe80::8e20:1868:65b9:3c1f/64 scope link tentative noprefixroute ', '       valid_lft forever preferred_lft forever'], 'stderr_lines': [], 'failed': False, 'item': {'key': 'enp1s0f1np1', 'value': {'ipv4': '192.168.56.1/24', 'ipv6': 'fd00:56::1/64'}}, 'ansible_loop_var': 'item'}) => {
+    "msg": [
+        "1240: enp1s0f1np1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP group default qlen 1000",
+        "    link/ether 64:9d:99:ff:f5:7b brd ff:ff:ff:ff:ff:ff",
+        "    inet 192.168.56.1/24 scope global enp1s0f1np1",
+        "       valid_lft forever preferred_lft forever",
+        "    inet6 fd00:56::1/64 scope global tentative ",
+        "       valid_lft forever preferred_lft forever",
+        "    inet6 fe80::8e20:1868:65b9:3c1f/64 scope link tentative noprefixroute ",
+        "       valid_lft forever preferred_lft forever"
+    ]
+}
+ok: [10.90.1.5] => (item={'changed': True, 'stdout': '1237: enp1s0f1np1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP group default qlen 1000\n    link/ether 64:9d:99:ff:e6:cf brd ff:ff:ff:ff:ff:ff\n    inet 192.168.56.5/24 scope global enp1s0f1np1\n       valid_lft forever preferred_lft forever\n    inet6 fd00:56::5/64 scope global tentative \n       valid_lft forever preferred_lft forever\n    inet6 fe80::6a82:59fd:6ed4:9a92/64 scope link tentative noprefixroute \n       valid_lft forever preferred_lft forever', 'stderr': '', 'rc': 0, 'cmd': 'ip addr show dev enp1s0f1np1', 'start': '2026-05-13 03:31:35.172544', 'end': '2026-05-13 03:31:35.175177', 'delta': '0:00:00.002633', 'msg': '', 'invocation': {'module_args': {'_raw_params': 'ip addr show dev enp1s0f1np1', '_uses_shell': True, 'expand_argument_vars': True, 'stdin_add_newline': True, 'strip_empty_ends': True, 'argv': None, 'chdir': None, 'executable': None, 'creates': None, 'removes': None, 'stdin': None}}, 'stdout_lines': ['1237: enp1s0f1np1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP group default qlen 1000', '    link/ether 64:9d:99:ff:e6:cf brd ff:ff:ff:ff:ff:ff', '    inet 192.168.56.5/24 scope global enp1s0f1np1', '       valid_lft forever preferred_lft forever', '    inet6 fd00:56::5/64 scope global tentative ', '       valid_lft forever preferred_lft forever', '    inet6 fe80::6a82:59fd:6ed4:9a92/64 scope link tentative noprefixroute ', '       valid_lft forever preferred_lft forever'], 'stderr_lines': [], 'failed': False, 'item': {'key': 'enp1s0f1np1', 'value': {'ipv4': '192.168.56.5/24', 'ipv6': 'fd00:56::5/64'}}, 'ansible_loop_var': 'item'}) => {
+    "msg": [
+        "1237: enp1s0f1np1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP group default qlen 1000",
+        "    link/ether 64:9d:99:ff:e6:cf brd ff:ff:ff:ff:ff:ff",
+        "    inet 192.168.56.5/24 scope global enp1s0f1np1",
+        "       valid_lft forever preferred_lft forever",
+        "    inet6 fd00:56::5/64 scope global tentative ",
+        "       valid_lft forever preferred_lft forever",
+        "    inet6 fe80::6a82:59fd:6ed4:9a92/64 scope link tentative noprefixroute ",
+        "       valid_lft forever preferred_lft forever"
+    ]
+}
+ok: [10.90.1.6] => (item={'changed': True, 'stdout': '37: enp1s0f0np0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP group default qlen 1000\n    link/ether 64:9d:99:ff:f5:9a brd ff:ff:ff:ff:ff:ff\n    inet 192.168.56.6/24 scope global enp1s0f0np0\n       valid_lft forever preferred_lft forever\n    inet6 fd00:56::6/64 scope global tentative \n       valid_lft forever preferred_lft forever\n    inet6 fe80::a576:bd34:4b6d:90d9/64 scope link noprefixroute \n       valid_lft forever preferred_lft forever', 'stderr': '', 'rc': 0, 'cmd': 'ip addr show dev enp1s0f0np0', 'start': '2026-05-13 03:31:35.161148', 'end': '2026-05-13 03:31:35.163370', 'delta': '0:00:00.002222', 'msg': '', 'invocation': {'module_args': {'_raw_params': 'ip addr show dev enp1s0f0np0', '_uses_shell': True, 'expand_argument_vars': True, 'stdin_add_newline': True, 'strip_empty_ends': True, 'argv': None, 'chdir': None, 'executable': None, 'creates': None, 'removes': None, 'stdin': None}}, 'stdout_lines': ['37: enp1s0f0np0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP group default qlen 1000', '    link/ether 64:9d:99:ff:f5:9a brd ff:ff:ff:ff:ff:ff', '    inet 192.168.56.6/24 scope global enp1s0f0np0', '       valid_lft forever preferred_lft forever', '    inet6 fd00:56::6/64 scope global tentative ', '       valid_lft forever preferred_lft forever', '    inet6 fe80::a576:bd34:4b6d:90d9/64 scope link noprefixroute ', '       valid_lft forever preferred_lft forever'], 'stderr_lines': [], 'failed': False, 'item': {'key': 'enp1s0f0np0', 'value': {'ipv4': '192.168.56.6/24', 'ipv6': 'fd00:56::6/64'}}, 'ansible_loop_var': 'item'}) => {
+    "msg": [
+        "37: enp1s0f0np0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP group default qlen 1000",
+        "    link/ether 64:9d:99:ff:f5:9a brd ff:ff:ff:ff:ff:ff",
+        "    inet 192.168.56.6/24 scope global enp1s0f0np0",
+        "       valid_lft forever preferred_lft forever",
+        "    inet6 fd00:56::6/64 scope global tentative ",
+        "       valid_lft forever preferred_lft forever",
+        "    inet6 fe80::a576:bd34:4b6d:90d9/64 scope link noprefixroute ",
+        "       valid_lft forever preferred_lft forever"
+    ]
+}
+ok: [10.90.1.6] => (item={'changed': True, 'stdout': '38: enp1s0f1np1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP group default qlen 1000\n    link/ether 64:9d:99:ff:f5:9b brd ff:ff:ff:ff:ff:ff\n    inet 192.168.46.6/24 scope global enp1s0f1np1\n       valid_lft forever preferred_lft forever\n    inet6 fd00:46::6/64 scope global tentative \n       valid_lft forever preferred_lft forever\n    inet6 fe80::5475:a83d:55aa:e1fe/64 scope link tentative noprefixroute \n       valid_lft forever preferred_lft forever', 'stderr': '', 'rc': 0, 'cmd': 'ip addr show dev enp1s0f1np1', 'start': '2026-05-13 03:31:35.303757', 'end': '2026-05-13 03:31:35.305960', 'delta': '0:00:00.002203', 'msg': '', 'invocation': {'module_args': {'_raw_params': 'ip addr show dev enp1s0f1np1', '_uses_shell': True, 'expand_argument_vars': True, 'stdin_add_newline': True, 'strip_empty_ends': True, 'argv': None, 'chdir': None, 'executable': None, 'creates': None, 'removes': None, 'stdin': None}}, 'stdout_lines': ['38: enp1s0f1np1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP group default qlen 1000', '    link/ether 64:9d:99:ff:f5:9b brd ff:ff:ff:ff:ff:ff', '    inet 192.168.46.6/24 scope global enp1s0f1np1', '       valid_lft forever preferred_lft forever', '    inet6 fd00:46::6/64 scope global tentative ', '       valid_lft forever preferred_lft forever', '    inet6 fe80::5475:a83d:55aa:e1fe/64 scope link tentative noprefixroute ', '       valid_lft forever preferred_lft forever'], 'stderr_lines': [], 'failed': False, 'item': {'key': 'enp1s0f1np1', 'value': {'ipv4': '192.168.46.6/24', 'ipv6': 'fd00:46::6/64'}}, 'ansible_loop_var': 'item'}) => {
+    "msg": [
+        "38: enp1s0f1np1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP group default qlen 1000",
+        "    link/ether 64:9d:99:ff:f5:9b brd ff:ff:ff:ff:ff:ff",
+        "    inet 192.168.46.6/24 scope global enp1s0f1np1",
+        "       valid_lft forever preferred_lft forever",
+        "    inet6 fd00:46::6/64 scope global tentative ",
+        "       valid_lft forever preferred_lft forever",
+        "    inet6 fe80::5475:a83d:55aa:e1fe/64 scope link tentative noprefixroute ",
+        "       valid_lft forever preferred_lft forever"
+    ]
+}
+
+PLAY RECAP *********************************************************************
+10.90.1.1                  : ok=8    changed=6    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+10.90.1.4                  : ok=8    changed=6    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+10.90.1.5                  : ok=8    changed=6    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+10.90.1.6                  : ok=6    changed=4    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
+
+OK
+    Running 02_setup_route.yaml ... 
+PLAY [Setup static routes and IP forwarding] ***********************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [10.90.1.6]
+ok: [10.90.1.4]
+ok: [10.90.1.1]
+ok: [10.90.1.5]
+
+TASK [Add IPv4 static routes] **************************************************
+skipping: [10.90.1.1]
+skipping: [10.90.1.6]
+changed: [10.90.1.4] => (item={'dst': '192.168.56.0/24', 'via': '192.168.46.6'})
+changed: [10.90.1.5] => (item={'dst': '192.168.46.0/24', 'via': '192.168.56.6'})
+
+TASK [Add IPv6 static routes] **************************************************
+skipping: [10.90.1.1]
+skipping: [10.90.1.6]
+changed: [10.90.1.5] => (item={'dst': 'fd00:46::/64', 'via': 'fd00:56::6'})
+changed: [10.90.1.4] => (item={'dst': 'fd00:56::/64', 'via': 'fd00:46::6'})
+
+TASK [Enable IPv4 forwarding on Node 6] ****************************************
+skipping: [10.90.1.1]
+skipping: [10.90.1.4]
+skipping: [10.90.1.5]
+changed: [10.90.1.6]
+
+TASK [Enable IPv6 forwarding on Node 6] ****************************************
+skipping: [10.90.1.1]
+skipping: [10.90.1.4]
+skipping: [10.90.1.5]
+changed: [10.90.1.6]
+
+TASK [Show IPv4 routing table] *************************************************
+changed: [10.90.1.6]
+changed: [10.90.1.5]
+changed: [10.90.1.4]
+changed: [10.90.1.1]
+
+TASK [Show IPv6 routing table] *************************************************
+changed: [10.90.1.6]
+changed: [10.90.1.1]
+changed: [10.90.1.4]
+changed: [10.90.1.5]
+
+TASK [Print routing tables] ****************************************************
+ok: [10.90.1.1] => {
+    "msg": [
+        "=== IPv4 routes ===",
+        [
+            "default via 10.90.0.1 dev enp0s31f6 proto dhcp src 10.90.1.1 metric 102 ",
+            "10.90.0.0/21 dev enp0s31f6 proto kernel scope link src 10.90.1.1 metric 102 ",
+            "172.17.0.0/16 dev docker0 proto kernel scope link src 172.17.0.1 ",
+            "192.168.46.0/24 dev enp1s0f0np0 proto kernel scope link src 192.168.46.1 linkdown ",
+            "192.168.56.0/24 dev enp1s0f1np1 proto kernel scope link src 192.168.56.1 "
+        ],
+        "=== IPv6 routes ===",
+        [
+            "fd00:46::/64 dev enp1s0f0np0 proto kernel metric 256 linkdown pref medium",
+            "fd00:56::/64 dev enp1s0f1np1 proto kernel metric 256 pref medium",
+            "fe80::/64 dev vethd07417f proto kernel metric 256 pref medium",
+            "fe80::/64 dev docker0 proto kernel metric 256 pref medium",
+            "fe80::/64 dev veth1202205 proto kernel metric 256 pref medium",
+            "fe80::/64 dev enp0s31f6 proto kernel metric 1024 pref medium",
+            "fe80::/64 dev enp1s0f1np1 proto kernel metric 1024 pref medium"
+        ]
+    ]
+}
+ok: [10.90.1.4] => {
+    "msg": [
+        "=== IPv4 routes ===",
+        [
+            "default via 10.90.0.1 dev enp0s31f6 proto dhcp src 10.90.1.4 metric 101 ",
+            "10.90.0.0/21 dev enp0s31f6 proto kernel scope link src 10.90.1.4 metric 101 ",
+            "192.168.46.0/24 dev enp1s0f1np1 proto kernel scope link src 192.168.46.4 ",
+            "192.168.56.0/24 via 192.168.46.6 dev enp1s0f1np1 "
+        ],
+        "=== IPv6 routes ===",
+        [
+            "fd00:46::/64 dev enp1s0f1np1 proto kernel metric 256 pref medium",
+            "fd00:56::/64 via fd00:46::6 dev enp1s0f1np1 metric 1024 pref medium",
+            "fe80::/64 dev enp0s31f6 proto kernel metric 1024 pref medium",
+            "fe80::/64 dev enp1s0f1np1 proto kernel metric 1024 pref medium"
+        ]
+    ]
+}
+ok: [10.90.1.5] => {
+    "msg": [
+        "=== IPv4 routes ===",
+        [
+            "default via 10.90.0.1 dev enp0s31f6 proto dhcp src 10.90.1.5 metric 101 ",
+            "10.90.0.0/21 dev enp0s31f6 proto kernel scope link src 10.90.1.5 metric 101 ",
+            "192.168.46.0/24 via 192.168.56.6 dev enp1s0f1np1 ",
+            "192.168.56.0/24 dev enp1s0f1np1 proto kernel scope link src 192.168.56.5 "
+        ],
+        "=== IPv6 routes ===",
+        [
+            "fd00:46::/64 via fd00:56::6 dev enp1s0f1np1 metric 1024 pref medium",
+            "fd00:56::/64 dev enp1s0f1np1 proto kernel metric 256 pref medium",
+            "fe80::/64 dev enp0s31f6 proto kernel metric 1024 pref medium",
+            "fe80::/64 dev enp1s0f1np1 proto kernel metric 1024 pref medium"
+        ]
+    ]
+}
+ok: [10.90.1.6] => {
+    "msg": [
+        "=== IPv4 routes ===",
+        [
+            "default via 10.90.0.1 dev enp0s31f6 proto dhcp src 10.90.1.6 metric 102 ",
+            "10.90.0.0/21 dev enp0s31f6 proto kernel scope link src 10.90.1.6 metric 102 ",
+            "172.17.0.0/16 dev docker0 proto kernel scope link src 172.17.0.1 linkdown ",
+            "192.168.46.0/24 dev enp1s0f1np1 proto kernel scope link src 192.168.46.6 ",
+            "192.168.56.0/24 dev enp1s0f0np0 proto kernel scope link src 192.168.56.6 "
+        ],
+        "=== IPv6 routes ===",
+        [
+            "fd00:46::/64 dev enp1s0f1np1 proto kernel metric 256 pref medium",
+            "fd00:56::/64 dev enp1s0f0np0 proto kernel metric 256 pref medium",
+            "fe80::/64 dev enp0s31f6 proto kernel metric 1024 pref medium",
+            "fe80::/64 dev enp1s0f0np0 proto kernel metric 1024 pref medium",
+            "fe80::/64 dev enp1s0f1np1 proto kernel metric 1024 pref medium"
+        ]
+    ]
+}
+
+TASK [Ping connectivity tests] *************************************************
+changed: [10.90.1.5] => (item={'target': '192.168.56.1', 'label': 'Node1  192.168.56.1  (direct)'})
+changed: [10.90.1.6] => (item={'target': '192.168.46.1', 'label': 'Node1  192.168.46.1  (direct)'})
+changed: [10.90.1.4] => (item={'target': '192.168.46.1', 'label': 'Node1  192.168.46.1  (direct)'})
+changed: [10.90.1.1] => (item={'target': '192.168.46.4', 'label': 'Node4  192.168.46.4  (direct)'})
+changed: [10.90.1.5] => (item={'target': '192.168.56.6', 'label': 'Node6  192.168.56.6  (direct)'})
+changed: [10.90.1.6] => (item={'target': '192.168.46.4', 'label': 'Node4  192.168.46.4  (direct)'})
+changed: [10.90.1.4] => (item={'target': '192.168.46.6', 'label': 'Node6  192.168.46.6  (direct)'})
+changed: [10.90.1.1] => (item={'target': '192.168.46.6', 'label': 'Node6  192.168.46.6  (direct)'})
+changed: [10.90.1.5] => (item={'target': '192.168.46.1', 'label': 'Node1  192.168.46.1  (via Node6)'})
+changed: [10.90.1.6] => (item={'target': '192.168.56.1', 'label': 'Node1  192.168.56.1  (direct)'})
+changed: [10.90.1.4] => (item={'target': '192.168.56.1', 'label': 'Node1  192.168.56.1  (via Node6)'})
+changed: [10.90.1.1] => (item={'target': '192.168.56.5', 'label': 'Node5  192.168.56.5  (direct)'})
+changed: [10.90.1.5] => (item={'target': '192.168.46.4', 'label': 'Node4  192.168.46.4  (via Node6)'})
+changed: [10.90.1.6] => (item={'target': '192.168.56.5', 'label': 'Node5  192.168.56.5  (direct)'})
+changed: [10.90.1.4] => (item={'target': '192.168.56.5', 'label': 'Node5  192.168.56.5  (via Node6)'})
+changed: [10.90.1.1] => (item={'target': '192.168.56.6', 'label': 'Node6  192.168.56.6  (direct)'})
+
+TASK [Build ping summary per host] *********************************************
+ok: [10.90.1.1] => (item={'changed': True, 'stdout': 'PING 192.168.46.4 (192.168.46.4) 56(84) bytes of data.\n64 bytes from 192.168.46.4: icmp_seq=1 ttl=64 time=2073 ms\n64 bytes from 192.168.46.4: icmp_seq=2 ttl=64 time=1009 ms\n\n--- 192.168.46.4 ping statistics ---\n2 packets transmitted, 2 received, 0% packet loss, time 1064ms\nrtt min/avg/max/mdev = 1008.940/1540.758/2072.576/531.818 ms, pipe 2', 'stderr': '', 'rc': 0, 'cmd': 'ping -c 2 -W 2 192.168.46.4', 'start': '2026-05-13 03:31:39.244823', 'end': '2026-05-13 03:31:41.321167', 'delta': '0:00:02.076344', 'msg': '', 'invocation': {'module_args': {'_raw_params': 'ping -c 2 -W 2 192.168.46.4', '_uses_shell': True, 'expand_argument_vars': True, 'stdin_add_newline': True, 'strip_empty_ends': True, 'argv': None, 'chdir': None, 'executable': None, 'creates': None, 'removes': None, 'stdin': None}}, 'stdout_lines': ['PING 192.168.46.4 (192.168.46.4) 56(84) bytes of data.', '64 bytes from 192.168.46.4: icmp_seq=1 ttl=64 time=2073 ms', '64 bytes from 192.168.46.4: icmp_seq=2 ttl=64 time=1009 ms', '', '--- 192.168.46.4 ping statistics ---', '2 packets transmitted, 2 received, 0% packet loss, time 1064ms', 'rtt min/avg/max/mdev = 1008.940/1540.758/2072.576/531.818 ms, pipe 2'], 'stderr_lines': [], 'failed': False, 'failed_when_result': False, 'item': {'target': '192.168.46.4', 'label': 'Node4  192.168.46.4  (direct)'}, 'ansible_loop_var': 'item'})
+ok: [10.90.1.1] => (item={'changed': True, 'stdout': 'PING 192.168.46.6 (192.168.46.6) 56(84) bytes of data.\n64 bytes from 192.168.46.6: icmp_seq=1 ttl=64 time=0.167 ms\n64 bytes from 192.168.46.6: icmp_seq=2 ttl=64 time=0.153 ms\n\n--- 192.168.46.6 ping statistics ---\n2 packets transmitted, 2 received, 0% packet loss, time 1014ms\nrtt min/avg/max/mdev = 0.153/0.160/0.167/0.007 ms', 'stderr': '', 'rc': 0, 'cmd': 'ping -c 2 -W 2 192.168.46.6', 'start': '2026-05-13 03:31:41.534402', 'end': '2026-05-13 03:31:42.552398', 'delta': '0:00:01.017996', 'msg': '', 'invocation': {'module_args': {'_raw_params': 'ping -c 2 -W 2 192.168.46.6', '_uses_shell': True, 'expand_argument_vars': True, 'stdin_add_newline': True, 'strip_empty_ends': True, 'argv': None, 'chdir': None, 'executable': None, 'creates': None, 'removes': None, 'stdin': None}}, 'stdout_lines': ['PING 192.168.46.6 (192.168.46.6) 56(84) bytes of data.', '64 bytes from 192.168.46.6: icmp_seq=1 ttl=64 time=0.167 ms', '64 bytes from 192.168.46.6: icmp_seq=2 ttl=64 time=0.153 ms', '', '--- 192.168.46.6 ping statistics ---', '2 packets transmitted, 2 received, 0% packet loss, time 1014ms', 'rtt min/avg/max/mdev = 0.153/0.160/0.167/0.007 ms'], 'stderr_lines': [], 'failed': False, 'failed_when_result': False, 'item': {'target': '192.168.46.6', 'label': 'Node6  192.168.46.6  (direct)'}, 'ansible_loop_var': 'item'})
+ok: [10.90.1.1] => (item={'changed': True, 'stdout': 'PING 192.168.56.5 (192.168.56.5) 56(84) bytes of data.\n64 bytes from 192.168.56.5: icmp_seq=1 ttl=64 time=0.162 ms\n64 bytes from 192.168.56.5: icmp_seq=2 ttl=64 time=0.220 ms\n\n--- 192.168.56.5 ping statistics ---\n2 packets transmitted, 2 received, 0% packet loss, time 1054ms\nrtt min/avg/max/mdev = 0.162/0.191/0.220/0.029 ms', 'stderr': '', 'rc': 0, 'cmd': 'ping -c 2 -W 2 192.168.56.5', 'start': '2026-05-13 03:31:42.774678', 'end': '2026-05-13 03:31:43.832681', 'delta': '0:00:01.058003', 'msg': '', 'invocation': {'module_args': {'_raw_params': 'ping -c 2 -W 2 192.168.56.5', '_uses_shell': True, 'expand_argument_vars': True, 'stdin_add_newline': True, 'strip_empty_ends': True, 'argv': None, 'chdir': None, 'executable': None, 'creates': None, 'removes': None, 'stdin': None}}, 'stdout_lines': ['PING 192.168.56.5 (192.168.56.5) 56(84) bytes of data.', '64 bytes from 192.168.56.5: icmp_seq=1 ttl=64 time=0.162 ms', '64 bytes from 192.168.56.5: icmp_seq=2 ttl=64 time=0.220 ms', '', '--- 192.168.56.5 ping statistics ---', '2 packets transmitted, 2 received, 0% packet loss, time 1054ms', 'rtt min/avg/max/mdev = 0.162/0.191/0.220/0.029 ms'], 'stderr_lines': [], 'failed': False, 'failed_when_result': False, 'item': {'target': '192.168.56.5', 'label': 'Node5  192.168.56.5  (direct)'}, 'ansible_loop_var': 'item'})
+ok: [10.90.1.4] => (item={'changed': True, 'stdout': 'PING 192.168.46.1 (192.168.46.1) 56(84) bytes of data.\n64 bytes from 192.168.46.1: icmp_seq=1 ttl=64 time=2080 ms\n64 bytes from 192.168.46.1: icmp_seq=2 ttl=64 time=1024 ms\n\n--- 192.168.46.1 ping statistics ---\n2 packets transmitted, 2 received, 0% packet loss, time 1056ms\nrtt min/avg/max/mdev = 1024.319/1552.294/2080.270/527.975 ms, pipe 2', 'stderr': '', 'rc': 0, 'cmd': 'ping -c 2 -W 2 192.168.46.1', 'start': '2026-05-13 03:31:39.236118', 'end': '2026-05-13 03:31:41.320078', 'delta': '0:00:02.083960', 'msg': '', 'invocation': {'module_args': {'_raw_params': 'ping -c 2 -W 2 192.168.46.1', '_uses_shell': True, 'expand_argument_vars': True, 'stdin_add_newline': True, 'strip_empty_ends': True, 'argv': None, 'chdir': None, 'executable': None, 'creates': None, 'removes': None, 'stdin': None}}, 'stdout_lines': ['PING 192.168.46.1 (192.168.46.1) 56(84) bytes of data.', '64 bytes from 192.168.46.1: icmp_seq=1 ttl=64 time=2080 ms', '64 bytes from 192.168.46.1: icmp_seq=2 ttl=64 time=1024 ms', '', '--- 192.168.46.1 ping statistics ---', '2 packets transmitted, 2 received, 0% packet loss, time 1056ms', 'rtt min/avg/max/mdev = 1024.319/1552.294/2080.270/527.975 ms, pipe 2'], 'stderr_lines': [], 'failed': False, 'failed_when_result': False, 'item': {'target': '192.168.46.1', 'label': 'Node1  192.168.46.1  (direct)'}, 'ansible_loop_var': 'item'})
+ok: [10.90.1.5] => (item={'changed': True, 'stdout': 'PING 192.168.56.1 (192.168.56.1) 56(84) bytes of data.\n64 bytes from 192.168.56.1: icmp_seq=1 ttl=64 time=0.429 ms\n64 bytes from 192.168.56.1: icmp_seq=2 ttl=64 time=0.242 ms\n\n--- 192.168.56.1 ping statistics ---\n2 packets transmitted, 2 received, 0% packet loss, time 1025ms\nrtt min/avg/max/mdev = 0.242/0.335/0.429/0.093 ms', 'stderr': '', 'rc': 0, 'cmd': 'ping -c 2 -W 2 192.168.56.1', 'start': '2026-05-13 03:31:39.255868', 'end': '2026-05-13 03:31:40.283435', 'delta': '0:00:01.027567', 'msg': '', 'invocation': {'module_args': {'_raw_params': 'ping -c 2 -W 2 192.168.56.1', '_uses_shell': True, 'expand_argument_vars': True, 'stdin_add_newline': True, 'strip_empty_ends': True, 'argv': None, 'chdir': None, 'executable': None, 'creates': None, 'removes': None, 'stdin': None}}, 'stdout_lines': ['PING 192.168.56.1 (192.168.56.1) 56(84) bytes of data.', '64 bytes from 192.168.56.1: icmp_seq=1 ttl=64 time=0.429 ms', '64 bytes from 192.168.56.1: icmp_seq=2 ttl=64 time=0.242 ms', '', '--- 192.168.56.1 ping statistics ---', '2 packets transmitted, 2 received, 0% packet loss, time 1025ms', 'rtt min/avg/max/mdev = 0.242/0.335/0.429/0.093 ms'], 'stderr_lines': [], 'failed': False, 'failed_when_result': False, 'item': {'target': '192.168.56.1', 'label': 'Node1  192.168.56.1  (direct)'}, 'ansible_loop_var': 'item'})
+ok: [10.90.1.1] => (item={'changed': True, 'stdout': 'PING 192.168.56.6 (192.168.56.6) 56(84) bytes of data.\n64 bytes from 192.168.56.6: icmp_seq=1 ttl=64 time=0.162 ms\n64 bytes from 192.168.56.6: icmp_seq=2 ttl=64 time=0.175 ms\n\n--- 192.168.56.6 ping statistics ---\n2 packets transmitted, 2 received, 0% packet loss, time 1059ms\nrtt min/avg/max/mdev = 0.162/0.168/0.175/0.006 ms', 'stderr': '', 'rc': 0, 'cmd': 'ping -c 2 -W 2 192.168.56.6', 'start': '2026-05-13 03:31:44.049471', 'end': '2026-05-13 03:31:45.112839', 'delta': '0:00:01.063368', 'msg': '', 'invocation': {'module_args': {'_raw_params': 'ping -c 2 -W 2 192.168.56.6', '_uses_shell': True, 'expand_argument_vars': True, 'stdin_add_newline': True, 'strip_empty_ends': True, 'argv': None, 'chdir': None, 'executable': None, 'creates': None, 'removes': None, 'stdin': None}}, 'stdout_lines': ['PING 192.168.56.6 (192.168.56.6) 56(84) bytes of data.', '64 bytes from 192.168.56.6: icmp_seq=1 ttl=64 time=0.162 ms', '64 bytes from 192.168.56.6: icmp_seq=2 ttl=64 time=0.175 ms', '', '--- 192.168.56.6 ping statistics ---', '2 packets transmitted, 2 received, 0% packet loss, time 1059ms', 'rtt min/avg/max/mdev = 0.162/0.168/0.175/0.006 ms'], 'stderr_lines': [], 'failed': False, 'failed_when_result': False, 'item': {'target': '192.168.56.6', 'label': 'Node6  192.168.56.6  (direct)'}, 'ansible_loop_var': 'item'})
+ok: [10.90.1.4] => (item={'changed': True, 'stdout': 'PING 192.168.46.6 (192.168.46.6) 56(84) bytes of data.\n64 bytes from 192.168.46.6: icmp_seq=1 ttl=64 time=0.086 ms\n64 bytes from 192.168.46.6: icmp_seq=2 ttl=64 time=0.168 ms\n\n--- 192.168.46.6 ping statistics ---\n2 packets transmitted, 2 received, 0% packet loss, time 1002ms\nrtt min/avg/max/mdev = 0.086/0.127/0.168/0.041 ms', 'stderr': '', 'rc': 0, 'cmd': 'ping -c 2 -W 2 192.168.46.6', 'start': '2026-05-13 03:31:41.531998', 'end': '2026-05-13 03:31:42.537063', 'delta': '0:00:01.005065', 'msg': '', 'invocation': {'module_args': {'_raw_params': 'ping -c 2 -W 2 192.168.46.6', '_uses_shell': True, 'expand_argument_vars': True, 'stdin_add_newline': True, 'strip_empty_ends': True, 'argv': None, 'chdir': None, 'executable': None, 'creates': None, 'removes': None, 'stdin': None}}, 'stdout_lines': ['PING 192.168.46.6 (192.168.46.6) 56(84) bytes of data.', '64 bytes from 192.168.46.6: icmp_seq=1 ttl=64 time=0.086 ms', '64 bytes from 192.168.46.6: icmp_seq=2 ttl=64 time=0.168 ms', '', '--- 192.168.46.6 ping statistics ---', '2 packets transmitted, 2 received, 0% packet loss, time 1002ms', 'rtt min/avg/max/mdev = 0.086/0.127/0.168/0.041 ms'], 'stderr_lines': [], 'failed': False, 'failed_when_result': False, 'item': {'target': '192.168.46.6', 'label': 'Node6  192.168.46.6  (direct)'}, 'ansible_loop_var': 'item'})
+ok: [10.90.1.5] => (item={'changed': True, 'stdout': 'PING 192.168.56.6 (192.168.56.6) 56(84) bytes of data.\n64 bytes from 192.168.56.6: icmp_seq=1 ttl=64 time=0.452 ms\n64 bytes from 192.168.56.6: icmp_seq=2 ttl=64 time=0.131 ms\n\n--- 192.168.56.6 ping statistics ---\n2 packets transmitted, 2 received, 0% packet loss, time 1016ms\nrtt min/avg/max/mdev = 0.131/0.291/0.452/0.160 ms', 'stderr': '', 'rc': 0, 'cmd': 'ping -c 2 -W 2 192.168.56.6', 'start': '2026-05-13 03:31:40.416026', 'end': '2026-05-13 03:31:41.436483', 'delta': '0:00:01.020457', 'msg': '', 'invocation': {'module_args': {'_raw_params': 'ping -c 2 -W 2 192.168.56.6', '_uses_shell': True, 'expand_argument_vars': True, 'stdin_add_newline': True, 'strip_empty_ends': True, 'argv': None, 'chdir': None, 'executable': None, 'creates': None, 'removes': None, 'stdin': None}}, 'stdout_lines': ['PING 192.168.56.6 (192.168.56.6) 56(84) bytes of data.', '64 bytes from 192.168.56.6: icmp_seq=1 ttl=64 time=0.452 ms', '64 bytes from 192.168.56.6: icmp_seq=2 ttl=64 time=0.131 ms', '', '--- 192.168.56.6 ping statistics ---', '2 packets transmitted, 2 received, 0% packet loss, time 1016ms', 'rtt min/avg/max/mdev = 0.131/0.291/0.452/0.160 ms'], 'stderr_lines': [], 'failed': False, 'failed_when_result': False, 'item': {'target': '192.168.56.6', 'label': 'Node6  192.168.56.6  (direct)'}, 'ansible_loop_var': 'item'})
+ok: [10.90.1.5] => (item={'changed': True, 'stdout': 'PING 192.168.46.1 (192.168.46.1) 56(84) bytes of data.\n64 bytes from 192.168.46.1: icmp_seq=1 ttl=64 time=0.284 ms\n64 bytes from 192.168.46.1: icmp_seq=2 ttl=64 time=0.200 ms\n\n--- 192.168.46.1 ping statistics ---\n2 packets transmitted, 2 received, 0% packet loss, time 1005ms\nrtt min/avg/max/mdev = 0.200/0.242/0.284/0.042 ms', 'stderr': '', 'rc': 0, 'cmd': 'ping -c 2 -W 2 192.168.46.1', 'start': '2026-05-13 03:31:41.642948', 'end': '2026-05-13 03:31:42.652479', 'delta': '0:00:01.009531', 'msg': '', 'invocation': {'module_args': {'_raw_params': 'ping -c 2 -W 2 192.168.46.1', '_uses_shell': True, 'expand_argument_vars': True, 'stdin_add_newline': True, 'strip_empty_ends': True, 'argv': None, 'chdir': None, 'executable': None, 'creates': None, 'removes': None, 'stdin': None}}, 'stdout_lines': ['PING 192.168.46.1 (192.168.46.1) 56(84) bytes of data.', '64 bytes from 192.168.46.1: icmp_seq=1 ttl=64 time=0.284 ms', '64 bytes from 192.168.46.1: icmp_seq=2 ttl=64 time=0.200 ms', '', '--- 192.168.46.1 ping statistics ---', '2 packets transmitted, 2 received, 0% packet loss, time 1005ms', 'rtt min/avg/max/mdev = 0.200/0.242/0.284/0.042 ms'], 'stderr_lines': [], 'failed': False, 'failed_when_result': False, 'item': {'target': '192.168.46.1', 'label': 'Node1  192.168.46.1  (via Node6)'}, 'ansible_loop_var': 'item'})
+ok: [10.90.1.4] => (item={'changed': True, 'stdout': 'PING 192.168.56.1 (192.168.56.1) 56(84) bytes of data.\n64 bytes from 192.168.56.1: icmp_seq=1 ttl=64 time=0.150 ms\n64 bytes from 192.168.56.1: icmp_seq=2 ttl=64 time=0.256 ms\n\n--- 192.168.56.1 ping statistics ---\n2 packets transmitted, 2 received, 0% packet loss, time 1064ms\nrtt min/avg/max/mdev = 0.150/0.203/0.256/0.053 ms', 'stderr': '', 'rc': 0, 'cmd': 'ping -c 2 -W 2 192.168.56.1', 'start': '2026-05-13 03:31:42.747697', 'end': '2026-05-13 03:31:43.815629', 'delta': '0:00:01.067932', 'msg': '', 'invocation': {'module_args': {'_raw_params': 'ping -c 2 -W 2 192.168.56.1', '_uses_shell': True, 'expand_argument_vars': True, 'stdin_add_newline': True, 'strip_empty_ends': True, 'argv': None, 'chdir': None, 'executable': None, 'creates': None, 'removes': None, 'stdin': None}}, 'stdout_lines': ['PING 192.168.56.1 (192.168.56.1) 56(84) bytes of data.', '64 bytes from 192.168.56.1: icmp_seq=1 ttl=64 time=0.150 ms', '64 bytes from 192.168.56.1: icmp_seq=2 ttl=64 time=0.256 ms', '', '--- 192.168.56.1 ping statistics ---', '2 packets transmitted, 2 received, 0% packet loss, time 1064ms', 'rtt min/avg/max/mdev = 0.150/0.203/0.256/0.053 ms'], 'stderr_lines': [], 'failed': False, 'failed_when_result': False, 'item': {'target': '192.168.56.1', 'label': 'Node1  192.168.56.1  (via Node6)'}, 'ansible_loop_var': 'item'})
+ok: [10.90.1.5] => (item={'changed': True, 'stdout': 'PING 192.168.46.4 (192.168.46.4) 56(84) bytes of data.\n64 bytes from 192.168.46.4: icmp_seq=1 ttl=63 time=0.251 ms\n64 bytes from 192.168.46.4: icmp_seq=2 ttl=63 time=0.206 ms\n\n--- 192.168.46.4 ping statistics ---\n2 packets transmitted, 2 received, 0% packet loss, time 1063ms\nrtt min/avg/max/mdev = 0.206/0.228/0.251/0.022 ms', 'stderr': '', 'rc': 0, 'cmd': 'ping -c 2 -W 2 192.168.46.4', 'start': '2026-05-13 03:31:42.865109', 'end': '2026-05-13 03:31:43.932403', 'delta': '0:00:01.067294', 'msg': '', 'invocation': {'module_args': {'_raw_params': 'ping -c 2 -W 2 192.168.46.4', '_uses_shell': True, 'expand_argument_vars': True, 'stdin_add_newline': True, 'strip_empty_ends': True, 'argv': None, 'chdir': None, 'executable': None, 'creates': None, 'removes': None, 'stdin': None}}, 'stdout_lines': ['PING 192.168.46.4 (192.168.46.4) 56(84) bytes of data.', '64 bytes from 192.168.46.4: icmp_seq=1 ttl=63 time=0.251 ms', '64 bytes from 192.168.46.4: icmp_seq=2 ttl=63 time=0.206 ms', '', '--- 192.168.46.4 ping statistics ---', '2 packets transmitted, 2 received, 0% packet loss, time 1063ms', 'rtt min/avg/max/mdev = 0.206/0.228/0.251/0.022 ms'], 'stderr_lines': [], 'failed': False, 'failed_when_result': False, 'item': {'target': '192.168.46.4', 'label': 'Node4  192.168.46.4  (via Node6)'}, 'ansible_loop_var': 'item'})
+ok: [10.90.1.4] => (item={'changed': True, 'stdout': 'PING 192.168.56.5 (192.168.56.5) 56(84) bytes of data.\n64 bytes from 192.168.56.5: icmp_seq=1 ttl=63 time=0.284 ms\n64 bytes from 192.168.56.5: icmp_seq=2 ttl=63 time=0.362 ms\n\n--- 192.168.56.5 ping statistics ---\n2 packets transmitted, 2 received, 0% packet loss, time 1000ms\nrtt min/avg/max/mdev = 0.284/0.323/0.362/0.039 ms', 'stderr': '', 'rc': 0, 'cmd': 'ping -c 2 -W 2 192.168.56.5', 'start': '2026-05-13 03:31:44.028959', 'end': '2026-05-13 03:31:45.033726', 'delta': '0:00:01.004767', 'msg': '', 'invocation': {'module_args': {'_raw_params': 'ping -c 2 -W 2 192.168.56.5', '_uses_shell': True, 'expand_argument_vars': True, 'stdin_add_newline': True, 'strip_empty_ends': True, 'argv': None, 'chdir': None, 'executable': None, 'creates': None, 'removes': None, 'stdin': None}}, 'stdout_lines': ['PING 192.168.56.5 (192.168.56.5) 56(84) bytes of data.', '64 bytes from 192.168.56.5: icmp_seq=1 ttl=63 time=0.284 ms', '64 bytes from 192.168.56.5: icmp_seq=2 ttl=63 time=0.362 ms', '', '--- 192.168.56.5 ping statistics ---', '2 packets transmitted, 2 received, 0% packet loss, time 1000ms', 'rtt min/avg/max/mdev = 0.284/0.323/0.362/0.039 ms'], 'stderr_lines': [], 'failed': False, 'failed_when_result': False, 'item': {'target': '192.168.56.5', 'label': 'Node5  192.168.56.5  (via Node6)'}, 'ansible_loop_var': 'item'})
+ok: [10.90.1.6] => (item={'changed': True, 'stdout': 'PING 192.168.46.1 (192.168.46.1) 56(84) bytes of data.\n64 bytes from 192.168.46.1: icmp_seq=1 ttl=64 time=2061 ms\n64 bytes from 192.168.46.1: icmp_seq=2 ttl=64 time=1025 ms\n\n--- 192.168.46.1 ping statistics ---\n2 packets transmitted, 2 received, 0% packet loss, time 1036ms\nrtt min/avg/max/mdev = 1024.742/1542.842/2060.943/518.100 ms, pipe 2', 'stderr': '', 'rc': 0, 'cmd': 'ping -c 2 -W 2 192.168.46.1', 'start': '2026-05-13 03:31:39.223716', 'end': '2026-05-13 03:31:41.287323', 'delta': '0:00:02.063607', 'msg': '', 'invocation': {'module_args': {'_raw_params': 'ping -c 2 -W 2 192.168.46.1', '_uses_shell': True, 'expand_argument_vars': True, 'stdin_add_newline': True, 'strip_empty_ends': True, 'argv': None, 'chdir': None, 'executable': None, 'creates': None, 'removes': None, 'stdin': None}}, 'stdout_lines': ['PING 192.168.46.1 (192.168.46.1) 56(84) bytes of data.', '64 bytes from 192.168.46.1: icmp_seq=1 ttl=64 time=2061 ms', '64 bytes from 192.168.46.1: icmp_seq=2 ttl=64 time=1025 ms', '', '--- 192.168.46.1 ping statistics ---', '2 packets transmitted, 2 received, 0% packet loss, time 1036ms', 'rtt min/avg/max/mdev = 1024.742/1542.842/2060.943/518.100 ms, pipe 2'], 'stderr_lines': [], 'failed': False, 'failed_when_result': False, 'item': {'target': '192.168.46.1', 'label': 'Node1  192.168.46.1  (direct)'}, 'ansible_loop_var': 'item'})
+ok: [10.90.1.6] => (item={'changed': True, 'stdout': 'PING 192.168.46.4 (192.168.46.4) 56(84) bytes of data.\n64 bytes from 192.168.46.4: icmp_seq=1 ttl=64 time=0.448 ms\n64 bytes from 192.168.46.4: icmp_seq=2 ttl=64 time=0.209 ms\n\n--- 192.168.46.4 ping statistics ---\n2 packets transmitted, 2 received, 0% packet loss, time 1015ms\nrtt min/avg/max/mdev = 0.209/0.328/0.448/0.119 ms', 'stderr': '', 'rc': 0, 'cmd': 'ping -c 2 -W 2 192.168.46.4', 'start': '2026-05-13 03:31:41.420456', 'end': '2026-05-13 03:31:42.438858', 'delta': '0:00:01.018402', 'msg': '', 'invocation': {'module_args': {'_raw_params': 'ping -c 2 -W 2 192.168.46.4', '_uses_shell': True, 'expand_argument_vars': True, 'stdin_add_newline': True, 'strip_empty_ends': True, 'argv': None, 'chdir': None, 'executable': None, 'creates': None, 'removes': None, 'stdin': None}}, 'stdout_lines': ['PING 192.168.46.4 (192.168.46.4) 56(84) bytes of data.', '64 bytes from 192.168.46.4: icmp_seq=1 ttl=64 time=0.448 ms', '64 bytes from 192.168.46.4: icmp_seq=2 ttl=64 time=0.209 ms', '', '--- 192.168.46.4 ping statistics ---', '2 packets transmitted, 2 received, 0% packet loss, time 1015ms', 'rtt min/avg/max/mdev = 0.209/0.328/0.448/0.119 ms'], 'stderr_lines': [], 'failed': False, 'failed_when_result': False, 'item': {'target': '192.168.46.4', 'label': 'Node4  192.168.46.4  (direct)'}, 'ansible_loop_var': 'item'})
+ok: [10.90.1.6] => (item={'changed': True, 'stdout': 'PING 192.168.56.1 (192.168.56.1) 56(84) bytes of data.\n64 bytes from 192.168.56.1: icmp_seq=1 ttl=64 time=0.785 ms\n64 bytes from 192.168.56.1: icmp_seq=2 ttl=64 time=0.251 ms\n\n--- 192.168.56.1 ping statistics ---\n2 packets transmitted, 2 received, 0% packet loss, time 1015ms\nrtt min/avg/max/mdev = 0.251/0.518/0.785/0.267 ms', 'stderr': '', 'rc': 0, 'cmd': 'ping -c 2 -W 2 192.168.56.1', 'start': '2026-05-13 03:31:42.573220', 'end': '2026-05-13 03:31:43.590738', 'delta': '0:00:01.017518', 'msg': '', 'invocation': {'module_args': {'_raw_params': 'ping -c 2 -W 2 192.168.56.1', '_uses_shell': True, 'expand_argument_vars': True, 'stdin_add_newline': True, 'strip_empty_ends': True, 'argv': None, 'chdir': None, 'executable': None, 'creates': None, 'removes': None, 'stdin': None}}, 'stdout_lines': ['PING 192.168.56.1 (192.168.56.1) 56(84) bytes of data.', '64 bytes from 192.168.56.1: icmp_seq=1 ttl=64 time=0.785 ms', '64 bytes from 192.168.56.1: icmp_seq=2 ttl=64 time=0.251 ms', '', '--- 192.168.56.1 ping statistics ---', '2 packets transmitted, 2 received, 0% packet loss, time 1015ms', 'rtt min/avg/max/mdev = 0.251/0.518/0.785/0.267 ms'], 'stderr_lines': [], 'failed': False, 'failed_when_result': False, 'item': {'target': '192.168.56.1', 'label': 'Node1  192.168.56.1  (direct)'}, 'ansible_loop_var': 'item'})
+ok: [10.90.1.6] => (item={'changed': True, 'stdout': 'PING 192.168.56.5 (192.168.56.5) 56(84) bytes of data.\n64 bytes from 192.168.56.5: icmp_seq=1 ttl=64 time=0.342 ms\n64 bytes from 192.168.56.5: icmp_seq=2 ttl=64 time=0.217 ms\n\n--- 192.168.56.5 ping statistics ---\n2 packets transmitted, 2 received, 0% packet loss, time 1012ms\nrtt min/avg/max/mdev = 0.217/0.279/0.342/0.062 ms', 'stderr': '', 'rc': 0, 'cmd': 'ping -c 2 -W 2 192.168.56.5', 'start': '2026-05-13 03:31:43.728036', 'end': '2026-05-13 03:31:44.742738', 'delta': '0:00:01.014702', 'msg': '', 'invocation': {'module_args': {'_raw_params': 'ping -c 2 -W 2 192.168.56.5', '_uses_shell': True, 'expand_argument_vars': True, 'stdin_add_newline': True, 'strip_empty_ends': True, 'argv': None, 'chdir': None, 'executable': None, 'creates': None, 'removes': None, 'stdin': None}}, 'stdout_lines': ['PING 192.168.56.5 (192.168.56.5) 56(84) bytes of data.', '64 bytes from 192.168.56.5: icmp_seq=1 ttl=64 time=0.342 ms', '64 bytes from 192.168.56.5: icmp_seq=2 ttl=64 time=0.217 ms', '', '--- 192.168.56.5 ping statistics ---', '2 packets transmitted, 2 received, 0% packet loss, time 1012ms', 'rtt min/avg/max/mdev = 0.217/0.279/0.342/0.062 ms'], 'stderr_lines': [], 'failed': False, 'failed_when_result': False, 'item': {'target': '192.168.56.5', 'label': 'Node5  192.168.56.5  (direct)'}, 'ansible_loop_var': 'item'})
+
+TASK [Print ping recap] ********************************************************
+ok: [10.90.1.1] => {
+    "msg": "============================================================\nPING RECAP\n============================================================\n[10.90.1.1]\n  Node4  192.168.46.4  (direct): OK\n  Node6  192.168.46.6  (direct): OK\n  Node5  192.168.56.5  (direct): OK\n  Node6  192.168.56.6  (direct): OK\n\n[10.90.1.4]\n  Node1  192.168.46.1  (direct): OK\n  Node6  192.168.46.6  (direct): OK\n  Node1  192.168.56.1  (via Node6): OK\n  Node5  192.168.56.5  (via Node6): OK\n\n[10.90.1.5]\n  Node1  192.168.56.1  (direct): OK\n  Node6  192.168.56.6  (direct): OK\n  Node1  192.168.46.1  (via Node6): OK\n  Node4  192.168.46.4  (via Node6): OK\n\n[10.90.1.6]\n  Node1  192.168.46.1  (direct): OK\n  Node4  192.168.46.4  (direct): OK\n  Node1  192.168.56.1  (direct): OK\n  Node5  192.168.56.5  (direct): OK\n\n============================================================\n"
+}
+
+PLAY RECAP *********************************************************************
+10.90.1.1                  : ok=7    changed=3    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+10.90.1.4                  : ok=8    changed=5    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
+10.90.1.5                  : ok=8    changed=5    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
+10.90.1.6                  : ok=8    changed=5    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
+
+OK
+    Running 03_setup_scripts.yaml ... 
+PLAY [Deploy pktgen send scripts to sender nodes] ******************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [10.90.1.6]
+ok: [10.90.1.5]
+ok: [10.90.1.4]
+ok: [10.90.1.1]
+
+TASK [Deploy pktgen script] ****************************************************
+skipping: [10.90.1.5]
+skipping: [10.90.1.6]
+ok: [10.90.1.4]
+ok: [10.90.1.1]
+
+TASK [Confirm script deployed] *************************************************
+ok: [10.90.1.1] => {
+    "msg": "Deployed node1_send.pkt to /home/telmat/ on 10.90.1.1"
+}
+ok: [10.90.1.4] => {
+    "msg": "Deployed node4_send.pkt to /home/telmat/ on 10.90.1.4"
+}
+skipping: [10.90.1.5]
+skipping: [10.90.1.6]
+
+TASK [Deploy getstats.lua to pktgen nodes] *************************************
+skipping: [10.90.1.6]
+ok: [10.90.1.1]
+ok: [10.90.1.4]
+ok: [10.90.1.5]
+
+TASK [Confirm getstats.lua deployed] *******************************************
+ok: [10.90.1.1] => {
+    "msg": "Deployed getstats.lua to /home/telmat/scripts/ on 10.90.1.1"
+}
+ok: [10.90.1.4] => {
+    "msg": "Deployed getstats.lua to /home/telmat/scripts/ on 10.90.1.4"
+}
+ok: [10.90.1.5] => {
+    "msg": "Deployed getstats.lua to /home/telmat/scripts/ on 10.90.1.5"
+}
+skipping: [10.90.1.6]
+
+TASK [Deploy getlatency.lua to pktgen nodes] ***********************************
+skipping: [10.90.1.6]
+ok: [10.90.1.5]
+ok: [10.90.1.1]
+ok: [10.90.1.4]
+
+TASK [Confirm getlatency.lua deployed] *****************************************
+ok: [10.90.1.1] => {
+    "msg": "Deployed getlatency.lua to /home/telmat/scripts/ on 10.90.1.1"
+}
+ok: [10.90.1.4] => {
+    "msg": "Deployed getlatency.lua to /home/telmat/scripts/ on 10.90.1.4"
+}
+ok: [10.90.1.5] => {
+    "msg": "Deployed getlatency.lua to /home/telmat/scripts/ on 10.90.1.5"
+}
+skipping: [10.90.1.6]
+
+TASK [Ensure /home/telmat/scripts directory exists] ****************************
+skipping: [10.90.1.6]
+ok: [10.90.1.1]
+ok: [10.90.1.4]
+ok: [10.90.1.5]
+
+TASK [Deploy bind-to-DPDK.sh] **************************************************
+skipping: [10.90.1.6]
+ok: [10.90.1.1]
+ok: [10.90.1.5]
+ok: [10.90.1.4]
+
+TASK [Confirm bind-to-DPDK.sh deployed] ****************************************
+ok: [10.90.1.1] => {
+    "msg": "Deployed bind-to-DPDK.sh to /home/telmat/scripts/ on 10.90.1.1"
+}
+ok: [10.90.1.4] => {
+    "msg": "Deployed bind-to-DPDK.sh to /home/telmat/scripts/ on 10.90.1.4"
+}
+ok: [10.90.1.5] => {
+    "msg": "Deployed bind-to-DPDK.sh to /home/telmat/scripts/ on 10.90.1.5"
+}
+skipping: [10.90.1.6]
+
+TASK [Bind DPDK interfaces on Node 1] ******************************************
+skipping: [10.90.1.4]
+skipping: [10.90.1.5]
+skipping: [10.90.1.6]
+changed: [10.90.1.1]
+
+TASK [Bind DPDK interfaces on Node 4 and 5] ************************************
+skipping: [10.90.1.1]
+skipping: [10.90.1.6]
+changed: [10.90.1.5]
+changed: [10.90.1.4]
+
+PLAY RECAP *********************************************************************
+10.90.1.1                  : ok=11   changed=1    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+10.90.1.4                  : ok=11   changed=1    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+10.90.1.5                  : ok=9    changed=1    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
+10.90.1.6                  : ok=1    changed=0    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
+
+OK
+
+════════════════════════════════════════════════════════════
+[1/1] XDP | Ports 650-660 | Direction: 41
+════════════════════════════════════════════════════════════
+
+  [1/5] Modifying pkt files ... OK
+  [2/5] Updating pktgen_config.json ... OK
+  [3/5] Binding Node 6 NICs (xdp) ...
+    Running 00_node6_bind_kernel.yaml ... 
+PLAY [Prepare Node 6 for XDP/Kernel — stop VPP service and bind NICs to kernel driver] ***
+
+TASK [Gathering Facts] *********************************************************
+ok: [10.90.1.6]
+
+TASK [Stop XDP forwarder before rebinding to kernel] ***************************
+ok: [10.90.1.6 -> localhost]
+
+TASK [Stop VPP service if running] *********************************************
+changed: [10.90.1.6]
+
+TASK [Bind NICs to kernel driver] **********************************************
+changed: [10.90.1.6] => (item=0000:01:00.0)
+changed: [10.90.1.6] => (item=0000:01:00.1)
+
+PLAY RECAP *********************************************************************
+10.90.1.6                  : ok=4    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+
+OK
+  [4/5] Running forwarder setup (xdp) ...
+    Running 04_setup_xdp_node6.yaml ... 
+PLAY [Rebind NICs to kernel driver before XDP] *********************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [10.90.1.6]
+
+TASK [Stop VPP service if running] *********************************************
+changed: [10.90.1.6]
+
+TASK [Bind NICs to kernel driver] **********************************************
+changed: [10.90.1.6] => (item=0000:01:00.0)
+changed: [10.90.1.6] => (item=0000:01:00.1)
+
+TASK [Set RX/TX ring buffer sizes] *********************************************
+changed: [10.90.1.6]
+
+TASK [Set queue count to 4 on both NICs] ***************************************
+changed: [10.90.1.6]
+
+TASK [Disable adaptive interrupt coalescing] ***********************************
+changed: [10.90.1.6]
+
+TASK [Disable unused offloads on ingress NIC] **********************************
+changed: [10.90.1.6]
+
+TASK [Stop irqbalance to prevent IRQ migration] ********************************
+changed: [10.90.1.6]
+
+TASK [Set CPU governor to performance on all cores] ****************************
+changed: [10.90.1.6]
+
+TASK [Pin each ingress NIC queue IRQ to a dedicated CPU (round-robin)] *********
+changed: [10.90.1.6]
+
+TASK [Pin each egress NIC queue IRQ to a dedicated CPU (round-robin)] **********
+changed: [10.90.1.6]
+
+TASK [Configure RSS to hash on src+dst IP and src+dst port] ********************
+changed: [10.90.1.6]
+
+PLAY [Configure XDP forwarder on Node 6 via API] *******************************
+
+TASK [Stop XDP if already running] *********************************************
+ok: [localhost]
+
+TASK [Set ingress and egress interfaces] ***************************************
+ok: [localhost]
+
+TASK [Start XDP program] *******************************************************
+ok: [localhost]
+
+TASK [Register egress NIC in devmap (slot 0)] **********************************
+ok: [localhost]
+
+TASK [Add forwarding table entries] ********************************************
+ok: [localhost] => (item={'ip': '192.168.56.5', 'dst_mac': '64:9D:99:FF:E6:CF', 'src_mac': '64:9D:99:FF:F5:9A', 'action': 'redirect'})
+ok: [localhost] => (item={'ip': '192.168.56.1', 'dst_mac': '64:9D:99:FF:F5:7B', 'src_mac': '64:9D:99:FF:F5:9A', 'action': 'redirect'})
+
+TASK [Apply blocked UDP ports] *************************************************
+skipping: [localhost]
+
+TASK [Verify forwarding table] *************************************************
+ok: [localhost]
+
+TASK [Print forwarding table] **************************************************
+ok: [localhost] => {
+    "msg": [
+        {
+            "action": "redirect",
+            "dst_mac": "64:9d:99:ff:e6:cf",
+            "ip": "192.168.56.5",
+            "port_key": 0,
+            "src_mac": "64:9d:99:ff:f5:9a"
+        },
+        {
+            "action": "redirect",
+            "dst_mac": "64:9d:99:ff:f5:7b",
+            "ip": "192.168.56.1",
+            "port_key": 0,
+            "src_mac": "64:9d:99:ff:f5:9a"
+        }
+    ]
+}
+
+PLAY [Post-XDP NIC reconfig (restore RSS + IRQ affinity after mlx5 RQ reinit)] ***
+
+TASK [Gathering Facts] *********************************************************
+ok: [10.90.1.6]
+
+TASK [Wait for mlx5 driver to finish XDP RQ reconfiguration] *******************
+Pausing for 2 seconds
+(ctrl+C then 'C' = continue early, ctrl+C then 'A' = abort)
+ok: [10.90.1.6]
+
+TASK [Re-establish 4 combined queues on both NICs post-XDP] ********************
+changed: [10.90.1.6]
+
+TASK [Set RSS indirection table to distribute equally across 4 queues] *********
+changed: [10.90.1.6]
+
+TASK [Wait for IRQ vectors to stabilize after queue reconfiguration] ***********
+Pausing for 1 seconds
+(ctrl+C then 'C' = continue early, ctrl+C then 'A' = abort)
+ok: [10.90.1.6]
+
+TASK [Re-pin ingress NIC IRQs to CPUs 0-3 (round-robin)] ***********************
+changed: [10.90.1.6]
+
+TASK [Re-pin egress NIC IRQs to CPUs 0-3 (round-robin)] ************************
+changed: [10.90.1.6]
+
+TASK [Verify queue count on ingress NIC] ***************************************
+changed: [10.90.1.6]
+
+TASK [Print ingress NIC queue info] ********************************************
+ok: [10.90.1.6] => {
+    "msg": "Channel parameters for enp1s0f1np1:\nPre-set maximums:\nRX:\t\t24\nTX:\t\t24\nOther:\t\t1\nCombined:\t24\nCurrent hardware settings:\nRX:\t\t0\nTX:\t\t0\nOther:\t\t1\nCombined:\t24"
+}
+
+TASK [Verify RSS indirection table on ingress NIC] *****************************
+changed: [10.90.1.6]
+
+TASK [Print RSS indirection table] *********************************************
+ok: [10.90.1.6] => {
+    "msg": "\nRX flow hash indirection table for enp1s0f1np1 with 24 RX ring(s):\n    0:      0     1     2     3     0     1     2     3\n    8:      0     1     2     3     0     1     2     3\n   16:      0     1     2     3     0     1     2     3\n   24:      0     1     2     3     0     1     2     3\n   32:      0     1     2     3     0     1     2     3\n   40:      0     1     2     3     0     1     2     3\n   48:      0     1     2     3     0     1     2     3\n   56:      0     1     2     3     0     1     2     3\n   64:      0     1     2     3     0     1     2     3\n   72:      0     1     2     3     0     1     2     3\n   80:      0     1     2     3     0     1     2     3\n   88:      0     1     2     3     0     1     2     3\n   96:      0     1     2     3     0     1     2     3\n  104:      0     1     2     3     0     1     2     3\n  112:      0     1     2     3     0     1     2     3\n  120:      0     1     2     3     0     1     2     3\n  128:      0     1     2     3     0     1     2     3\n  136:      0     1     2     3     0     1     2     3\n  144:      0     1     2     3     0     1     2     3\n  152:      0     1     2     3     0     1     2     3\n  160:      0     1     2     3     0     1     2     3\n  168:      0     1     2     3     0     1     2     3\n  176:      0     1     2     3     0     1     2     3\n  184:      0     1     2     3     0     1     2     3\n  192:      0     1     2     3     0     1     2     3\n  200:      0     1     2     3     0     1     2     3\n  208:      0     1     2     3     0     1     2     3\n  216:      0     1     2     3     0     1     2     3\n  224:      0     1     2     3     0     1     2     3\n  232:      0     1     2     3     0     1     2     3\n  240:      0     1     2     3     0     1     2     3\n  248:      0     1     2     3     0     1     2     3\n  256:      0     1     2     3     0     1     2     3\n  264:      0     1     2     3     0     1     2     3\n  272:      0     1     2     3     0     1     2     3\n  280:      0     1     2     3     0     1     2     3\n  288:      0     1     2     3     0     1     2     3\n  296:      0     1     2     3     0     1     2     3\n  304:      0     1     2     3     0     1     2     3\n  312:      0     1     2     3     0     1     2     3\n  320:      0     1     2     3     0     1     2     3\n  328:      0     1     2     3     0     1     2     3\n  336:      0     1     2     3     0     1     2     3\n  344:      0     1     2     3     0     1     2     3\n  352:      0     1     2     3     0     1     2     3\n  360:      0     1     2     3     0     1     2     3\n  368:      0     1     2     3     0     1     2     3\n  376:      0     1     2     3     0     1     2     3\n  384:      0     1     2     3     0     1     2     3\n  392:      0     1     2     3     0     1     2     3\n  400:      0     1     2     3     0     1     2     3\n  408:      0     1     2     3     0     1     2     3\n  416:      0     1     2     3     0     1     2     3\n  424:      0     1     2     3     0     1     2     3\n  432:      0     1     2     3     0     1     2     3\n  440:      0     1     2     3     0     1     2     3\n  448:      0     1     2     3     0     1     2     3\n  456:      0     1     2     3     0     1     2     3\n  464:      0     1     2     3     0     1     2     3\n  472:      0     1     2     3     0     1     2     3\n  480:      0     1     2     3     0     1     2     3\n  488:      0     1     2     3     0     1     2     3\n  496:      0     1     2     3     0     1     2     3\n  504:      0     1     2     3     0     1     2     3\n  512:      0     1     2     3     0     1     2     3\n  520:      0     1     2     3     0     1     2     3\n  528:      0     1     2     3     0     1     2     3\n  536:      0     1     2     3     0     1     2     3\n  544:      0     1     2     3     0     1     2     3\n  552:      0     1     2     3     0     1     2     3\n  560:      0     1     2     3     0     1     2     3\n  568:      0     1     2     3     0     1     2     3\n  576:      0     1     2     3     0     1     2     3\n  584:      0     1     2     3     0     1     2     3\n  592:      0     1     2     3     0     1     2     3\n  600:      0     1     2     3     0     1     2     3\n  608:      0     1     2     3     0     1     2     3\n  616:      0     1     2     3     0     1     2     3\n  624:      0     1     2     3     0     1     2     3\n  632:      0     1     2     3     0     1     2     3\n  640:      0     1     2     3     0     1     2     3\n  648:      0     1     2     3     0     1     2     3\n  656:      0     1     2     3     0     1     2     3\n  664:      0     1     2     3     0     1     2     3\n  672:      0     1     2     3     0     1     2     3\n  680:      0     1     2     3     0     1     2     3\n  688:      0     1     2     3     0     1     2     3\n  696:      0     1     2     3     0     1     2     3\n  704:      0     1     2     3     0     1     2     3\n  712:      0     1     2     3     0     1     2     3\n  720:      0     1     2     3     0     1     2     3\n  728:      0     1     2     3     0     1     2     3\n  736:      0     1     2     3     0     1     2     3\n  744:      0     1     2     3     0     1     2     3\n  752:      0     1     2     3     0     1     2     3\n  760:      0     1     2     3     0     1     2     3\n  768:      0     1     2     3     0     1     2     3\n  776:      0     1     2     3     0     1     2     3\n  784:      0     1     2     3     0     1     2     3\n  792:      0     1     2     3     0     1     2     3\n  800:      0     1     2     3     0     1     2     3\n  808:      0     1     2     3     0     1     2     3\n  816:      0     1     2     3     0     1     2     3\n  824:      0     1     2     3     0     1     2     3\n  832:      0     1     2     3     0     1     2     3\n  840:      0     1     2     3     0     1     2     3\n  848:      0     1     2     3     0     1     2     3\n  856:      0     1     2     3     0     1     2     3\n  864:      0     1     2     3     0     1     2     3\n  872:      0     1     2     3     0     1     2     3\n  880:      0     1     2     3     0     1     2     3\n  888:      0     1     2     3     0     1     2     3\n  896:      0     1     2     3     0     1     2     3\n  904:      0     1     2     3     0     1     2     3\n  912:      0     1     2     3     0     1     2     3\n  920:      0     1     2     3     0     1     2     3\n  928:      0     1     2     3     0     1     2     3\n  936:      0     1     2     3     0     1     2     3\n  944:      0     1     2     3     0     1     2     3\n  952:      0     1     2     3     0     1     2     3\n  960:      0     1     2     3     0     1     2     3\n  968:      0     1     2     3     0     1     2     3\n  976:      0     1     2     3     0     1     2     3\n  984:      0     1     2     3     0     1     2     3\n  992:      0     1     2     3     0     1     2     3\n 1000:      0     1     2     3     0     1     2     3\n 1008:      0     1     2     3     0     1     2     3\n 1016:      0     1     2     3     0     1     2     3\n 1024:      0     1     2     3     0     1     2     3\n 1032:      0     1     2     3     0     1     2     3\n 1040:      0     1     2     3     0     1     2     3\n 1048:      0     1     2     3     0     1     2     3\n 1056:      0     1     2     3     0     1     2     3\n 1064:      0     1     2     3     0     1     2     3\n 1072:      0     1     2     3     0     1     2     3\n 1080:      0     1     2     3     0     1     2     3\n 1088:      0     1     2     3     0     1     2     3\n 1096:      0     1     2     3     0     1     2     3\n 1104:      0     1     2     3     0     1     2     3\n 1112:      0     1     2     3     0     1     2     3\n 1120:      0     1     2     3     0     1     2     3\n 1128:      0     1     2     3     0     1     2     3\n 1136:      0     1     2     3     0     1     2     3\n 1144:      0     1     2     3     0     1     2     3\n 1152:      0     1     2     3     0     1     2     3\n 1160:      0     1     2     3     0     1     2     3\n 1168:      0     1     2     3     0     1     2     3\n 1176:      0     1     2     3     0     1     2     3\n 1184:      0     1     2     3     0     1     2     3\n 1192:      0     1     2     3     0     1     2     3\n 1200:      0     1     2     3     0     1     2     3\n 1208:      0     1     2     3     0     1     2     3\n 1216:      0     1     2     3     0     1     2     3\n 1224:      0     1     2     3     0     1     2     3\n 1232:      0     1     2     3     0     1     2     3\n 1240:      0     1     2     3     0     1     2     3\n 1248:      0     1     2     3     0     1     2     3\n 1256:      0     1     2     3     0     1     2     3\n 1264:      0     1     2     3     0     1     2     3\n 1272:      0     1     2     3     0     1     2     3\n 1280:      0     1     2     3     0     1     2     3\n 1288:      0     1     2     3     0     1     2     3\n 1296:      0     1     2     3     0     1     2     3\n 1304:      0     1     2     3     0     1     2     3\n 1312:      0     1     2     3     0     1     2     3\n 1320:      0     1     2     3     0     1     2     3\n 1328:      0     1     2     3     0     1     2     3\n 1336:      0     1     2     3     0     1     2     3\n 1344:      0     1     2     3     0     1     2     3\n 1352:      0     1     2     3     0     1     2     3\n 1360:      0     1     2     3     0     1     2     3\n 1368:      0     1     2     3     0     1     2     3\n 1376:      0     1     2     3     0     1     2     3\n 1384:      0     1     2     3     0     1     2     3\n 1392:      0     1     2     3     0     1     2     3\n 1400:      0     1     2     3     0     1     2     3\n 1408:      0     1     2     3     0     1     2     3\n 1416:      0     1     2     3     0     1     2     3\n 1424:      0     1     2     3     0     1     2     3\n 1432:      0     1     2     3     0     1     2     3\n 1440:      0     1     2     3     0     1     2     3\n 1448:      0     1     2     3     0     1     2     3\n 1456:      0     1     2     3     0     1     2     3\n 1464:      0     1     2     3     0     1     2     3\n 1472:      0     1     2     3     0     1     2     3\n 1480:      0     1     2     3     0     1     2     3\n 1488:      0     1     2     3     0     1     2     3\n 1496:      0     1     2     3     0     1     2     3\n 1504:      0     1     2     3     0     1     2     3\n 1512:      0     1     2     3     0     1     2     3\n 1520:      0     1     2     3     0     1     2     3\n 1528:      0     1     2     3     0     1     2     3\n 1536:      0     1     2     3     0     1     2     3\n 1544:      0     1     2     3     0     1     2     3\n 1552:      0     1     2     3     0     1     2     3\n 1560:      0     1     2     3     0     1     2     3\n 1568:      0     1     2     3     0     1     2     3\n 1576:      0     1     2     3     0     1     2     3\n 1584:      0     1     2     3     0     1     2     3\n 1592:      0     1     2     3     0     1     2     3\n 1600:      0     1     2     3     0     1     2     3\n 1608:      0     1     2     3     0     1     2     3\n 1616:      0     1     2     3     0     1     2     3\n 1624:      0     1     2     3     0     1     2     3\n 1632:      0     1     2     3     0     1     2     3\n 1640:      0     1     2     3     0     1     2     3\n 1648:      0     1     2     3     0     1     2     3\n 1656:      0     1     2     3     0     1     2     3\n 1664:      0     1     2     3     0     1     2     3\n 1672:      0     1     2     3     0     1     2     3\n 1680:      0     1     2     3     0     1     2     3\n 1688:      0     1     2     3     0     1     2     3\n 1696:      0     1     2     3     0     1     2     3\n 1704:      0     1     2     3     0     1     2     3\n 1712:      0     1     2     3     0     1     2     3\n 1720:      0     1     2     3     0     1     2     3\n 1728:      0     1     2     3     0     1     2     3\n 1736:      0     1     2     3     0     1     2     3\n 1744:      0     1     2     3     0     1     2     3\n 1752:      0     1     2     3     0     1     2     3\n 1760:      0     1     2     3     0     1     2     3\n 1768:      0     1     2     3     0     1     2     3\n 1776:      0     1     2     3     0     1     2     3\n 1784:      0     1     2     3     0     1     2     3\n 1792:      0     1     2     3     0     1     2     3\n 1800:      0     1     2     3     0     1     2     3\n 1808:      0     1     2     3     0     1     2     3\n 1816:      0     1     2     3     0     1     2     3\n 1824:      0     1     2     3     0     1     2     3\n 1832:      0     1     2     3     0     1     2     3\n 1840:      0     1     2     3     0     1     2     3\n 1848:      0     1     2     3     0     1     2     3\n 1856:      0     1     2     3     0     1     2     3\n 1864:      0     1     2     3     0     1     2     3\n 1872:      0     1     2     3     0     1     2     3\n 1880:      0     1     2     3     0     1     2     3\n 1888:      0     1     2     3     0     1     2     3\n 1896:      0     1     2     3     0     1     2     3\n 1904:      0     1     2     3     0     1     2     3\n 1912:      0     1     2     3     0     1     2     3\n 1920:      0     1     2     3     0     1     2     3\n 1928:      0     1     2     3     0     1     2     3\n 1936:      0     1     2     3     0     1     2     3\n 1944:      0     1     2     3     0     1     2     3\n 1952:      0     1     2     3     0     1     2     3\n 1960:      0     1     2     3     0     1     2     3\n 1968:      0     1     2     3     0     1     2     3\n 1976:      0     1     2     3     0     1     2     3\n 1984:      0     1     2     3     0     1     2     3\n 1992:      0     1     2     3     0     1     2     3\n 2000:      0     1     2     3     0     1     2     3\n 2008:      0     1     2     3     0     1     2     3\n 2016:      0     1     2     3     0     1     2     3\n 2024:      0     1     2     3     0     1     2     3\n 2032:      0     1     2     3     0     1     2     3\n 2040:      0     1     2     3     0     1     2     3\nRSS hash key:\n83:18:95:4e:bd:e3:41:41:59:5a:77:95:fe:50:1d:f1:41:9f:e9:9c:4a:8b:83:bb:af:fc:fb:00:f6:0f:49:17:38:dd:0f:b1:c9:18:83:71:95:9c:68:6c:3c:5e:cd:38:09:29:df:9a\nRSS hash function:\n    toeplitz: on\n    xor: off\n    crc32: off"
+}
+
+PLAY RECAP *********************************************************************
+10.90.1.6                  : ok=23   changed=17   unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+localhost                  : ok=7    changed=0    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+
+OK
+  [5/5] Running pktgen experiment ...
+        Waiting 10s for pktgen to initialize ... 
+PLAY [Start pktgen on sender nodes] ********************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [10.90.1.6]
+ok: [10.90.1.5]
+ok: [10.90.1.4]
+ok: [10.90.1.1]
+
+TASK [Load pktgen config from dashboard] ***************************************
+ok: [10.90.1.1 -> localhost]
+
+TASK [Force-kill any existing pktgen processes] ********************************
+skipping: [10.90.1.6]
+changed: [10.90.1.4]
+changed: [10.90.1.1]
+changed: [10.90.1.5]
+
+TASK [Kill existing pktgen tmux session if present] ****************************
+skipping: [10.90.1.6]
+changed: [10.90.1.4]
+changed: [10.90.1.1]
+changed: [10.90.1.5]
+
+TASK [Remove stale pktgen stats log before new run] ****************************
+skipping: [10.90.1.6] => (item=/tmp/pktgen_stats.log) 
+skipping: [10.90.1.6] => (item=/tmp/pktgen_latency.log) 
+skipping: [10.90.1.6]
+changed: [10.90.1.1] => (item=/tmp/pktgen_stats.log)
+changed: [10.90.1.5] => (item=/tmp/pktgen_stats.log)
+changed: [10.90.1.4] => (item=/tmp/pktgen_stats.log)
+ok: [10.90.1.4] => (item=/tmp/pktgen_latency.log)
+ok: [10.90.1.1] => (item=/tmp/pktgen_latency.log)
+ok: [10.90.1.5] => (item=/tmp/pktgen_latency.log)
+
+TASK [Launch pktgen in detached tmux session (with pkt script)] ****************
+skipping: [10.90.1.1]
+skipping: [10.90.1.5]
+skipping: [10.90.1.6]
+changed: [10.90.1.4]
+
+TASK [Launch pktgen in detached tmux session (receiver, no pkt script)] ********
+skipping: [10.90.1.4]
+skipping: [10.90.1.6]
+changed: [10.90.1.5]
+changed: [10.90.1.1]
+
+TASK [Clean up stale signal files] *********************************************
+ok: [10.90.1.1 -> localhost] => (item=/tmp/ansible_pktgen_start)
+ok: [10.90.1.1 -> localhost] => (item=/tmp/ansible_pktgen_stop)
+
+TASK [Clean up stale getstats sentinel on pktgen nodes] ************************
+skipping: [10.90.1.6]
+ok: [10.90.1.4]
+ok: [10.90.1.1]
+changed: [10.90.1.5]
+
+TASK [Wait for pktgen to initialize] *******************************************
+changed: [10.90.1.1 -> localhost]
+
+TASK [Signal dashboard - waiting for start] ************************************
+ok: [10.90.1.1] => {
+    "msg": "DASHBOARD_SIGNAL: waiting_for_start"
+}
+
+TASK [Wait for start signal from dashboard] ************************************
+STARTED
+        Running for 15s ... ok: [10.90.1.1 -> localhost]
+
+TASK [Remove start signal file] ************************************************
+changed: [10.90.1.1 -> localhost]
+
+TASK [Check tmux session is active before start] *******************************
+skipping: [10.90.1.6]
+changed: [10.90.1.5]
+changed: [10.90.1.4]
+changed: [10.90.1.1]
+
+TASK [Show tmux sessions before start] *****************************************
+ok: [10.90.1.1] => {
+    "msg": [
+        "pktgen: 1 windows (created Wed May 13 03:32:10 2026)"
+    ]
+}
+skipping: [10.90.1.6]
+ok: [10.90.1.4] => {
+    "msg": [
+        "pktgen: 1 windows (created Wed May 13 03:32:10 2026)"
+    ]
+}
+ok: [10.90.1.5] => {
+    "msg": [
+        "pktgen: 1 windows (created Wed May 13 03:32:10 2026)"
+    ]
+}
+
+TASK [Capture pktgen screen before start] **************************************
+skipping: [10.90.1.6]
+changed: [10.90.1.5]
+changed: [10.90.1.4]
+changed: [10.90.1.1]
+
+TASK [Show pktgen screen before start] *****************************************
+ok: [10.90.1.1] => {
+    "msg": [
+        "-ink State          :              <--Down-->           <UP-25000-FD>        ---",
+        "Total Rate---           0:-------        Unkn   1:-------        Unkn",
+        "            0       :              <--Down-->           <UP-25000-FD>",
+        "            0                               0                       0",
+        "            0                               0                       0",
+        "            0",
+        "          0/0",
+        "            1       :                       0                       0",
+        "            0",
+        "Errors Rx/Tx        :                       0                       1",
+        "Broadcast           :                       0                       0",
+        "Multicast           :                     0/0                     0/0",
+        "Sizes 64            :                       0                       0",
+        "      65-127        :                       0                      16",
+        "      128-255       :                       0                       0",
+        "      256-511       :                       0                       0",
+        "      512-1023      :                       0                       0",
+        "      1024-1518     :                       0                      16",
+        "Runts/Jumbos        :                       0                       0",
+        "ARP/ICMP Pkts       :                       0                       0",
+        "Tx Count/% Rate     :                     0/0                     0/0",
+        "-- Pktgen 24.07.0  P:                     0/0                     0/01---------",
+        "** Version: DPDK 24.07.0-rc1, Command Line Interface",
+        "Pktgen:/>"
+    ]
+}
+skipping: [10.90.1.6]
+ok: [10.90.1.4] => {
+    "msg": [
+        "/ink State          :           <UP-25000-FD>        ---Total Rate---",
+        "Pkts/s Rx           :   0:-------       Range                       0",
+        "       Tx           :           <UP-25000-FD>                       0",
+        "MBits/s Rx/Tx       :                       0                       0",
+        "Total Rx Pkts       :                       0                       0",
+        "      Tx Pkts       :                     0/0                     0/0",
+        "      Rx/Tx MBs     :                       3                       2",
+        "Pkts/s Rx Max       :                       0                       0",
+        "       Tx Max       :                     0/0",
+        "Errors Rx/Tx        :                       2",
+        "Broadcast           :                       0",
+        "Multicast           :                     0/0",
+        "Sizes 64            :                      16",
+        "      65-127        :                      32",
+        "      128-255       :                       0",
+        "      256-511       :                       0",
+        "      512-1023      :                       0",
+        "      1024-1518     :                      48",
+        "Runts/Jumbos        :                       0",
+        "ARP/ICMP Pkts       :                       0",
+        "Tx Count/% Rate     :                     0/0",
+        "-- Pktgen 24.07.0  P:                     0/01 (pid:1479842) ------------------",
+        "** Version: DPDK 24.07.0-rc1, Command Line Interface",
+        "Pktgen:/>"
+    ]
+}
+ok: [10.90.1.5] => {
+    "msg": [
+        "|ink State          :           <UP-25000-FD>        ---Total Rate---",
+        "Pkts/s Rx           :   0:-------        Unkn                       0",
+        "       Tx           :           <UP-25000-FD>                       0",
+        "MBits/s Rx/Tx       :                       0                       0",
+        "Total Rx Pkts       :                       0                       0",
+        "      Tx Pkts       :                     0/0                     0/0",
+        "      Rx/Tx MBs     :                       4                       4",
+        "Pkts/s Rx Max       :                       0                       0",
+        "       Tx Max       :                     0/0",
+        "Errors Rx/Tx        :                       4",
+        "Broadcast           :                       0",
+        "Multicast           :                     0/0",
+        "Sizes 64            :                      16",
+        "      65-127        :                      48",
+        "      128-255       :                       0",
+        "      256-511       :                       0",
+        "      512-1023      :                       0",
+        "      1024-1518     :                      64",
+        "Runts/Jumbos        :                       0",
+        "ARP/ICMP Pkts       :                       0",
+        "Tx Count/% Rate     :                     0/0",
+        "-- Pktgen 24.07.0  P:                     0/01 (pid:1460387) ------------------",
+        "** Version: DPDK 24.07.0-rc1, Command Line Interface",
+        "Pktgen:/>"
+    ]
+}
+
+TASK [Enable latency measurement on Node 4 (sender)] ***************************
+skipping: [10.90.1.1]
+skipping: [10.90.1.5]
+skipping: [10.90.1.6]
+changed: [10.90.1.4]
+
+TASK [Enable latency measurement on Node 5 (receiver)] *************************
+skipping: [10.90.1.1]
+skipping: [10.90.1.4]
+skipping: [10.90.1.6]
+changed: [10.90.1.5]
+
+TASK [Start traffic (start 0)] *************************************************
+skipping: [10.90.1.1]
+skipping: [10.90.1.5]
+skipping: [10.90.1.6]
+changed: [10.90.1.4]
+
+TASK [Load stats collection on Node 4 (sender)] ********************************
+skipping: [10.90.1.1]
+skipping: [10.90.1.5]
+skipping: [10.90.1.6]
+changed: [10.90.1.4]
+
+TASK [Load stats collection on Node 1 (sender + receiver ports)] ***************
+skipping: [10.90.1.4]
+skipping: [10.90.1.5]
+skipping: [10.90.1.6]
+changed: [10.90.1.1]
+
+TASK [Load stats collection on Node 5 (receiver)] ******************************
+skipping: [10.90.1.1]
+skipping: [10.90.1.4]
+skipping: [10.90.1.6]
+changed: [10.90.1.5]
+
+TASK [Start CPU metrics collection (mpstat all CPUs)] **************************
+changed: [10.90.1.5]
+changed: [10.90.1.1]
+changed: [10.90.1.4]
+changed: [10.90.1.6]
+
+TASK [Wait 2 seconds after start command] **************************************
+changed: [10.90.1.1 -> localhost]
+
+TASK [Capture pktgen screen after start] ***************************************
+skipping: [10.90.1.6]
+changed: [10.90.1.1]
+changed: [10.90.1.5]
+changed: [10.90.1.4]
+
+TASK [Show pktgen screen after start] ******************************************
+ok: [10.90.1.1] => {
+    "msg": [
+        "- opackets: 0",
+        "Key: 1                  0:-------        Unkn   1:-------        Unkn",
+        "  obytes: 0                     <UP-25000-FD>           <UP-25000-FD>",
+        "Key: 1                                      0              25.043.894",
+        "   25.043.8940                              0                       0",
+        "            0",
+        "     16.829/0",
+        "   25.043.894                               0                       0",
+        "            0",
+        "Key: 0                                      3              25.043.894",
+        "  imissed: 0                                0                       0",
+        "Key: 0                                    0/0                     0/0",
+        "  ipackets: 3                               0                       0",
+        "Key: 0                                     48                      48",
+        "  ierrors: 0                                0             822.027.472",
+        "Key: 0                                      0                       0",
+        "  opackets: 0                               0                       0",
+        "Key: 0                                     48                      48",
+        "  obytes: 0                                 0                       0",
+        "Key: 0                                      0                       0",
+        "  rx_nombuf: 0                            0/0                     0/0",
+        "Key: n                                    0/0                     0/0",
+        "  Value: 2"
+    ]
+}
+skipping: [10.90.1.6]
+ok: [10.90.1.4] => {
+    "msg": [
+        "  ierrors: 0                                0",
+        "Key: 0                                      0",
+        "  imissed: 0                              0/0",
+        "Key: n                                    0/0",
+        "  Value: 1",
+        "Key: 0",
+        "  oerrors: 213",
+        "Key: 0",
+        "  rx_nombuf: 0",
+        "Key: 0",
+        "  opackets: 79232729",
+        "Key: 0",
+        "  ibytes: 871",
+        "Key: 0",
+        "  ipackets: 3",
+        "Key: 0",
+        "  obytes: 4753961244",
+        "Key: 0",
+        "  ierrors: 0",
+        "Key: 0",
+        "  imissed: 0",
+        "Key: n",
+        "  Value: 1"
+    ]
+}
+ok: [10.90.1.5] => {
+    "msg": [
+        "/ ierrors: 0                                0",
+        "Key: 0                  0:----L--        Unkn",
+        "  ibytes: 1143                  <UP-25000-FD>",
+        "Key: n                                      0                       0",
+        "  Value: 1                                  0                       0",
+        "Key: 0                                    0/0                     0/0",
+        "  opackets: 0                               4                       4",
+        "Key: 0                                      0                       0",
+        "  obytes: 0                               0/0",
+        "Key: 0                                      4",
+        "  ipackets: 4                               0",
+        "Key: 0                                    0/0",
+        "  rx_nombuf: 0                             16",
+        "Key: 0                                     48",
+        "  imissed: 0                                0",
+        "Key: 0                                      0",
+        "  oerrors: 0                                0",
+        "Key: 0                                     64",
+        "  ierrors: 0                                0",
+        "Key: 0                                      0",
+        "  ibytes: 1143                            0/0",
+        "Key: n                                    0/0",
+        "  Value: 1"
+    ]
+}
+
+TASK [Signal dashboard - waiting for stop] *************************************
+ok: [10.90.1.1] => {
+    "msg": "DASHBOARD_SIGNAL: waiting_for_stop"
+}
+
+TASK [Wait for stop signal from dashboard] *************************************
+STOPPED
+        Waiting for ansible to collect results ... ok: [10.90.1.1 -> localhost]
+
+TASK [Remove stop signal file] *************************************************
+changed: [10.90.1.1 -> localhost]
+
+TASK [Stop traffic (stop 0)] ***************************************************
+skipping: [10.90.1.1]
+skipping: [10.90.1.5]
+skipping: [10.90.1.6]
+changed: [10.90.1.4]
+
+TASK [Stop CPU metrics collection] *********************************************
+changed: [10.90.1.6]
+changed: [10.90.1.4]
+changed: [10.90.1.1]
+changed: [10.90.1.5]
+
+TASK [Signal getstats.lua to stop on Node 5 (frees Lua VM for latency collection)] ***
+skipping: [10.90.1.1]
+skipping: [10.90.1.4]
+skipping: [10.90.1.6]
+changed: [10.90.1.5]
+
+TASK [Wait for getstats.lua loop to exit on Node 5] ****************************
+changed: [10.90.1.1 -> localhost]
+
+TASK [Collect latency stats on Node 5 (receiver)] ******************************
+skipping: [10.90.1.1]
+skipping: [10.90.1.4]
+skipping: [10.90.1.6]
+changed: [10.90.1.5]
+
+TASK [Wait for latency stats to write] *****************************************
+changed: [10.90.1.1 -> localhost]
+
+TASK [Quit pktgen] *************************************************************
+skipping: [10.90.1.6]
+changed: [10.90.1.4]
+changed: [10.90.1.5]
+changed: [10.90.1.1]
+
+TASK [Wait for final stats writes] *********************************************
+changed: [10.90.1.1 -> localhost]
+
+TASK [Freeze experiment timestamp] *********************************************
+ok: [10.90.1.1 -> localhost]
+
+TASK [Create experiment results directory] *************************************
+changed: [10.90.1.1 -> localhost]
+
+TASK [Fetch stats from Node 1] *************************************************
+skipping: [10.90.1.4]
+skipping: [10.90.1.5]
+skipping: [10.90.1.6]
+changed: [10.90.1.1]
+
+TASK [Fetch stats from Node 4] *************************************************
+skipping: [10.90.1.1]
+skipping: [10.90.1.5]
+skipping: [10.90.1.6]
+changed: [10.90.1.4]
+
+TASK [Fetch stats from Node 5] *************************************************
+skipping: [10.90.1.1]
+skipping: [10.90.1.4]
+skipping: [10.90.1.6]
+changed: [10.90.1.5]
+
+TASK [Fetch latency stats from Node 5] *****************************************
+skipping: [10.90.1.1]
+skipping: [10.90.1.4]
+skipping: [10.90.1.6]
+ok: [10.90.1.5]
+
+TASK [Fetch CPU mpstat from all nodes] *****************************************
+changed: [10.90.1.6]
+changed: [10.90.1.4]
+changed: [10.90.1.1]
+changed: [10.90.1.5]
+
+TASK [Save pkt scripts used in this experiment] ********************************
+changed: [10.90.1.1 -> localhost] => (item=/home/telmat/final_t40/dashboard/pkt_files/node1_send.pkt)
+changed: [10.90.1.1 -> localhost] => (item=/home/telmat/final_t40/dashboard/pkt_files/node4_send.pkt)
+
+TASK [Force-kill pktgen processes after experiment] ****************************
+skipping: [10.90.1.6]
+changed: [10.90.1.4]
+changed: [10.90.1.5]
+changed: [10.90.1.1]
+
+PLAY RECAP *********************************************************************
+10.90.1.1                  : ok=35   changed=23   unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+10.90.1.4                  : ok=22   changed=17   unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+10.90.1.5                  : ok=23   changed=18   unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+10.90.1.6                  : ok=4    changed=3    unreachable=0    failed=0    skipped=27   rescued=0    ignored=0   
+
+done (exit 0)
+        Results saved as: XDP_650-660_Port_No_Block_41_v3
+
+════════════════════════════════════════════════════════════
+Sweep complete: 1/1 ansible runs succeeded.

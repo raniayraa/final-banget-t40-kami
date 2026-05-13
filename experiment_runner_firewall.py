@@ -46,7 +46,7 @@ PKT_NODES = ["node1_send.pkt", "node4_send.pkt"]
 FORWARDERS = ["vpp", "xdp", "kernel"]
 
 FORWARDER_PLAYBOOK = {
-    "vpp":    "05_setup_vpp_node6.yaml",
+    "vpp":    "04_setup_vpp_node6.yaml",
     "xdp":    "04_setup_xdp_node6.yaml",
     "kernel": "04_setup_kernel_node6.yaml",
 }
@@ -74,7 +74,7 @@ SETUP_PLAYBOOKS = [
     "03_setup_scripts.yaml",
 ]
 
-XDP_API_BASE = "http://localhost:9898/api"
+XDP_API_BASE = "http://localhost:8080/api"
 
 # ---------------------------------------------------------------------------
 # Port range parser

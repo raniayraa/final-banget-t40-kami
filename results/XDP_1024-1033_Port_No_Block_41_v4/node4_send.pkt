@@ -1,8 +1,9 @@
 stop 0
 set 0 size 64
-set 0 proto udp
+
 
 enable 0 range
+set 0 proto udp
 
 range 0 src mac start 64:9D:99:FF:E7:AF
 range 0 src mac min   64:9D:99:FF:E7:AF

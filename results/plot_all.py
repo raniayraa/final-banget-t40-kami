@@ -33,6 +33,15 @@ TECH_STYLES = {
     "VPP":    {"color": "#6a408d", "marker": "^"},
 }
 
+# Styles cycled per version in duplicate-summary plots
+VERSION_STYLES = [
+    {"color": "#77b5b6", "marker": "o"},
+    {"color": "#e8895c", "marker": "s"},
+    {"color": "#6a408d", "marker": "^"},
+    {"color": "#2d8b57", "marker": "D"},
+    {"color": "#c0392b", "marker": "v"},
+]
+
 # Per-folder plot specs:  (row, col, csv, metric, port, y_max, line1)  — Multi
 #                          (col,      csv, metric, port, y_max, line1)  — Single
 TEMPLATES = {
@@ -70,16 +79,32 @@ RX_SPECS = {
 # ── shared helpers ────────────────────────────────────────────────────────────
 
 def _detect_variant(folder_name):
-    if re.search(r"_15_41$", folder_name):
+    name = re.sub(r'_v\d+$', '', folder_name)
+    if re.search(r"_15_41$", name):
         return "Multi", "Multi Traffic"
-    if re.search(r"_41$", folder_name):
+    if re.search(r"_41$", name):
         return "Single_41", "Single Traffic"
-    if re.search(r"_15$", folder_name):
+    if re.search(r"_15$", name):
         return "Single_15", "Single Traffic"
     raise RuntimeError(
         f"Cannot detect traffic variant from folder name: {folder_name!r}\n"
         "Expected suffix '_15_41', '_41', or '_15'."
     )
+
+
+def _parse_port_info(folder_name):
+    """Return (technology, port_range_str, n_port) or None."""
+    m = re.match(r"(Kernel|VPP|XDP)_(\d+(?:-\d+)?)_Port", folder_name)
+    if not m:
+        return None
+    technology = m.group(1)
+    port_range = m.group(2)
+    if '-' in port_range:
+        start, end = port_range.split('-')
+        n_port = int(end) - int(start) + 1
+    else:
+        n_port = 1
+    return technology, port_range, n_port
 
 
 def _load_data(csv_file, metric, port):
@@ -158,13 +183,14 @@ def draw_on_ax(ax, csv_file, metric, title_line1, title_line2,
               ncol=3, frameon=False)
 
 
-# ── summary port-scaling plot ─────────────────────────────────────────────────
+# ── summary port-scaling plot (all versions as scatter points) ────────────────
 
 def draw_summary_ax(ax, rx_label, points, technology, traffic_label, y_max=37):
-    style = TECH_STYLES.get(technology, {"color": "gray", "marker": "o"})
-    ports = [p for p, _ in points]
-    mpps  = [m for _, m in points]
-    peak  = max(mpps) if mpps else 0.0
+    """points: list of (n_port, mpps, version_label)"""
+    style  = TECH_STYLES.get(technology, {"color": "gray", "marker": "o"})
+    ports  = [p for p, _, _ in points]
+    mpps_v = [m for _, m, _ in points]
+    peak   = max(mpps_v) if mpps_v else 0.0
 
     ax.set_title(f"{rx_label}\n{technology} - {traffic_label} - Port Scaling",
                  pad=55, fontweight="bold", fontsize=24)
@@ -172,22 +198,77 @@ def draw_summary_ax(ax, rx_label, points, technology, traffic_label, y_max=37):
     ax.set_ylabel("Max stable packet rate (Mpps)")
     _grid(ax)
 
-    ax.plot(ports, mpps, color=style["color"], marker=style["marker"],
-            linewidth=2.0, markersize=8, zorder=2,
-            label=f"Max stable Mpps  (peak = {peak:.3f})")
+    # scatter — all individual data points
+    ax.scatter(ports, mpps_v, color=style["color"], marker=style["marker"],
+               s=90, alpha=0.75, zorder=3,
+               label=f"All runs  (peak = {peak:.3f})")
+
+    # mean trend line
+    port_groups = defaultdict(list)
+    for p, m, _ in points:
+        port_groups[p].append(m)
+    mean_pts = sorted((p, float(np.mean(ms))) for p, ms in port_groups.items())
+    if mean_pts:
+        mx, my = zip(*mean_pts)
+        ax.plot(mx, my, color=style["color"], linewidth=1.5,
+                linestyle="-", alpha=0.5, zorder=2, label="Mean per port count")
+
     ax.axhline(peak, color=style["color"], linewidth=1.5,
                linestyle=":", zorder=3)
 
     _apply_yticks(ax, y_max, peak, style["color"])
 
-    sorted_ports = sorted(ports)
+    sorted_ports = sorted(set(ports))
     ax.set_xticks(sorted_ports)
     ax.set_xticklabels([str(p) for p in sorted_ports])
     pad = max(0.3, (sorted_ports[-1] - sorted_ports[0]) * 0.03) if len(sorted_ports) > 1 else 0.5
     ax.set_xlim(sorted_ports[0] - pad, sorted_ports[-1] + pad)
 
     ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.01),
-              ncol=1, frameon=False)
+              ncol=2, frameon=False)
+
+
+# ── duplicate-summary plot (one line per version) ─────────────────────────────
+
+def draw_duplicates_ax(ax, rx_label, points, technology, traffic_label, y_max=37):
+    """points: list of (n_port, mpps, version_label)"""
+    ver_data = defaultdict(list)
+    for n_port, mpps, ver in points:
+        ver_data[ver].append((n_port, mpps))
+
+    all_versions = sorted(ver_data.keys())
+    peak = max(m for _, m, _ in points) if points else 0.0
+
+    ax.set_title(f"{rx_label}\n{technology} - {traffic_label} - Duplicate Runs",
+                 pad=55, fontweight="bold", fontsize=24)
+    ax.set_xlabel("Number of ports")
+    ax.set_ylabel("Max stable packet rate (Mpps)")
+    _grid(ax)
+
+    n_vers = len(all_versions)
+    jitter_step = 0.04
+    offsets = [(i - (n_vers - 1) / 2) * jitter_step for i in range(n_vers)]
+
+    for i, ver in enumerate(all_versions):
+        pts = sorted(ver_data[ver])
+        px  = [p + offsets[i] for p, _ in pts]
+        py  = [m for _, m in pts]
+        vstyle = VERSION_STYLES[i % len(VERSION_STYLES)]
+        ax.plot(px, py, color=vstyle["color"], marker=vstyle["marker"],
+                linewidth=2.0, markersize=8, zorder=2 + i, label=ver)
+
+    ax.axhline(peak, color="gray", linewidth=1.0, linestyle=":", zorder=1)
+
+    _apply_yticks(ax, y_max, peak, "gray")
+
+    sorted_ports = sorted({p for p, _, _ in points})
+    ax.set_xticks(sorted_ports)
+    ax.set_xticklabels([str(p) for p in sorted_ports])
+    pad = max(0.3, (sorted_ports[-1] - sorted_ports[0]) * 0.03) if len(sorted_ports) > 1 else 0.5
+    ax.set_xlim(sorted_ports[0] - pad, sorted_ports[-1] + pad)
+
+    ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.01),
+              ncol=min(4, n_vers), frameon=False)
 
 
 # ── main ──────────────────────────────────────────────────────────────────────
@@ -206,7 +287,7 @@ data_folders = sorted(
 if not data_folders:
     raise RuntimeError("No Kernel_*, VPP_*, or XDP_*_Port_No_Block_* folders found.")
 
-# summary_data[(technology, variant_key)][rx_label] = [(n_port, mpps), ...]
+# summary_data[(technology, variant_key)][rx_label] = [(n_port, mpps, version_label), ...]
 summary_data   = defaultdict(lambda: defaultdict(list))
 traffic_labels = {}
 
@@ -223,14 +304,17 @@ for folder in data_folders:
         print(f"Skipping {folder_name}: {e}")
         continue
 
-    tech_match = re.match(r"(Kernel|VPP|XDP)_(\d+)_Port", folder_name)
-    if not tech_match:
-        print(f"Skipping {folder_name}: cannot parse technology/port count.")
+    parsed = _parse_port_info(folder_name)
+    if not parsed:
+        print(f"Skipping {folder_name}: cannot parse technology/port range.")
         continue
 
-    technology  = tech_match.group(1)
-    n_port      = tech_match.group(2)
-    title_line2 = f"{technology} - {traffic_label} - {n_port} Port"
+    technology, port_range, n_port = parsed
+
+    ver_match     = re.search(r'_v(\d+)$', folder_name)
+    version_label = f"v{ver_match.group(1)}" if ver_match else "v1"
+
+    title_line2 = f"{technology} - {traffic_label} - {port_range} Port"
     template    = TEMPLATES[variant_key]
     is_multi    = variant_key == "Multi"
 
@@ -250,16 +334,16 @@ for folder in data_folders:
     plt.savefig(f"{stem}.png", dpi=150, bbox_inches="tight")
     plt.savefig(f"{stem}.svg",           bbox_inches="tight")
     plt.close(fig)
-    print(f"[plot]    result/plot_{folder_name}.png  [{technology} | {traffic_label} | {n_port} port]")
+    print(f"[plot]    result/plot_{folder_name}.png  [{technology} | {traffic_label} | {port_range} port | {version_label}]")
 
-    # accumulate data for summary plots
+    # accumulate data for summary/duplicate plots
     key = (technology, variant_key)
     traffic_labels[key] = traffic_label
     for rx_label, csv_file, metric, port, _y_max in RX_SPECS[variant_key]:
         try:
             _, y    = _load_data(os.path.join(folder, csv_file), metric, port)
             max_val = _max_stable(y)
-            summary_data[key][rx_label].append((int(n_port), max_val))
+            summary_data[key][rx_label].append((n_port, max_val, version_label))
         except Exception as exc:
             print(f"  Warning: {folder_name} [{rx_label}]: {exc}")
 
@@ -286,5 +370,29 @@ for key, rx_data in sorted(summary_data.items()):
     plt.savefig(f"{stem}.svg",           bbox_inches="tight")
     plt.close(fig)
     print(f"[summary] result/summary_{technology}_{variant_key}.png  [{technology} | {traffic_label}]")
+
+# ── pass 3: duplicate-summary plots ───────────────────────────────────────────
+print()
+for key, rx_data in sorted(summary_data.items()):
+    technology, variant_key = key
+    traffic_label = traffic_labels[key]
+    rx_spec_list  = RX_SPECS[variant_key]
+    n_rx          = len(rx_spec_list)
+
+    fig, axes = plt.subplots(1, n_rx, figsize=(14 * n_rx, 7))
+    if n_rx == 1:
+        axes = [axes]
+
+    for ax, (rx_label, _csv, _metric, _port, y_max) in zip(axes, rx_spec_list):
+        points = sorted(rx_data.get(rx_label, []))
+        draw_duplicates_ax(ax, rx_label, points, technology, traffic_label,
+                           y_max=y_max)
+
+    plt.tight_layout(pad=4.0)
+    stem = os.path.join(result_dir, f"duplicates_{technology}_{variant_key}")
+    plt.savefig(f"{stem}.png", dpi=150, bbox_inches="tight")
+    plt.savefig(f"{stem}.svg",           bbox_inches="tight")
+    plt.close(fig)
+    print(f"[dupes]   result/duplicates_{technology}_{variant_key}.png  [{technology} | {traffic_label}]")
 
 print("\nDone.")

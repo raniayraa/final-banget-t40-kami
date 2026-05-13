@@ -1,0 +1,29 @@
+---
+- name: Prepare Node 6 for XDP/Kernel — stop forwarders and bind NICs to kernel driver
+  hosts: 10.90.1.6
+  become: true
+
+  vars:
+    bind_script: /home/telmat/scripts/bind-to-kernel.sh
+    pci_devices:
+      - "0000:01:00.0"
+      - "0000:01:00.1"
+
+  tasks:
+    - name: Stop XDP forwarder before rebinding to kernel
+      ansible.builtin.uri:
+        url: "http://localhost:8080/api/stop"
+        method: POST
+        status_code: [200, 409, 500]
+      ignore_errors: true
+      delegate_to: localhost
+      run_once: true
+      become: false
+
+    - name: Stop VPP service if running
+      ansible.builtin.shell: systemctl stop vpp
+      failed_when: false
+
+    - name: Bind NICs to kernel driver
+      ansible.builtin.shell: "bash {{ bind_script }} {{ item }}"
+      loop: "{{ pci_devices }}"

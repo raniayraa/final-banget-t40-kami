@@ -79,7 +79,7 @@ forwarders_config:
       - { iface: TwentyFiveGigabitEthernet1/0/1, ip: 192.168.46.1, mac: "64:9D:99:FF:F5:7A" }
 
   xdp:
-    api_base: "http://localhost:9898/api"
+    api_base: "http://localhost:8080/api"
     iface_ingress: enp1s0f1np1
     iface_egress: enp1s0f0np0
     fwd_entries:
